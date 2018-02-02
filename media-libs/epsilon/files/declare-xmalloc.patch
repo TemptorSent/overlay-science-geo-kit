@@ -1,0 +1,110 @@
+Description: Include mem_alloc.h in files that use xmalloc
+ Also fix some incorrect calls exposed by this.
+Author: Colin Watson <cjwatson@ubuntu.com>
+Forwarded: no
+Last-Update: 2015-12-27
+
+--- a/src/cmd_decode_file.c
++++ b/src/cmd_decode_file.c
+@@ -47,6 +47,7 @@
+ #include <string.h>
+ #include <assert.h>
+ #include <time.h>
++#include <mem_alloc.h>
+ #include <options.h>
+ #include <misc.h>
+ #include <epsilon.h>
+--- a/src/cmd_encode_file.c
++++ b/src/cmd_encode_file.c
+@@ -47,6 +47,7 @@
+ #include <string.h>
+ #include <assert.h>
+ #include <time.h>
++#include <mem_alloc.h>
+ #include <options.h>
+ #include <misc.h>
+ #include <epsilon.h>
+--- a/src/cmd_start_node.c
++++ b/src/cmd_start_node.c
+@@ -48,6 +48,7 @@
+ #include <assert.h>
+ #include <errno.h>
+ #include <epsilon.h>
++#include <mem_alloc.h>
+ #include <options.h>
+ #include <misc.h>
+ 
+@@ -418,11 +419,11 @@ static void action_encode_gs(int sock_fd
+     filter[filter_len] = 0;
+ 
+     /* Allocate memory (it will be released implicitly at exit) */
+-    Y0 = (unsigned char *) xmalloc(block_size * block_size,
++    Y0 = (unsigned char *) xmalloc(block_size * block_size *
+         sizeof(unsigned char));
+     Y = (unsigned char **) eps_malloc_2D(block_size, block_size,
+         sizeof(unsigned char));
+-    buf = (unsigned char *) xmalloc(bytes_per_block,
++    buf = (unsigned char *) xmalloc(bytes_per_block *
+         sizeof(unsigned char));
+ 
+     /* Process all incoming blocks */
+@@ -526,7 +527,7 @@ static void action_encode_tc(int sock_fd
+     RECV_VALUE_FROM_MASTER(&Cr_ratio);
+ 
+     /* Allocate memory (it will be released implicitly at exit) */
+-    Y0 = (unsigned char *) xmalloc(block_size * block_size,
++    Y0 = (unsigned char *) xmalloc(block_size * block_size *
+         sizeof(unsigned char));
+     R = (unsigned char **) eps_malloc_2D(block_size, block_size,
+         sizeof(unsigned char));
+@@ -534,7 +535,7 @@ static void action_encode_tc(int sock_fd
+         sizeof(unsigned char));
+     B = (unsigned char **) eps_malloc_2D(block_size, block_size,
+         sizeof(unsigned char));
+-    buf = (unsigned char *) xmalloc(bytes_per_block,
++    buf = (unsigned char *) xmalloc(bytes_per_block *
+         sizeof(unsigned char));
+ 
+     /* Process all incoming blocks */
+@@ -628,11 +629,11 @@ static void action_decode_gs(int sock_fd
+     RECV_VALUE_FROM_MASTER(&block_size);
+ 
+     /* Allocate memory (it will be released implicitly at exit) */
+-    Y0 = (unsigned char *) xmalloc(block_size * block_size,
++    Y0 = (unsigned char *) xmalloc(block_size * block_size *
+         sizeof(unsigned char));
+     Y = (unsigned char **) eps_malloc_2D(block_size, block_size,
+         sizeof(unsigned char));
+-    buf = (unsigned char *) xmalloc(buf_size,
++    buf = (unsigned char *) xmalloc(buf_size *
+         sizeof(unsigned char));
+ 
+     /* Process all incoming blocks */
+@@ -707,7 +708,7 @@ static void action_decode_tc(int sock_fd
+     RECV_VALUE_FROM_MASTER(&block_size);
+ 
+     /* Allocate memory (it will be released implicitly at exit) */
+-    Y0 = (unsigned char *) xmalloc(block_size * block_size,
++    Y0 = (unsigned char *) xmalloc(block_size * block_size *
+         sizeof(unsigned char));
+     R = (unsigned char **) eps_malloc_2D(block_size, block_size,
+         sizeof(unsigned char));
+@@ -715,7 +716,7 @@ static void action_decode_tc(int sock_fd
+         sizeof(unsigned char));
+     B = (unsigned char **) eps_malloc_2D(block_size, block_size,
+         sizeof(unsigned char));
+-    buf = (unsigned char *) xmalloc(buf_size,
++    buf = (unsigned char *) xmalloc(buf_size *
+         sizeof(unsigned char));
+ 
+     /* Process all incoming blocks */
+--- a/src/worker_mpi_node.c
++++ b/src/worker_mpi_node.c
+@@ -31,6 +31,7 @@
+ #include <mpi.h>
+ #include <worker_mpi_node.h>
+ #include <epsilon.h>
++#include <mem_alloc.h>
+ #include <misc.h>
+ #include <stdio.h>
+ #include <stdlib.h>
