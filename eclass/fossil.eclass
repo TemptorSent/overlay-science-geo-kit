@@ -400,15 +400,19 @@ fossil_checkout() {
 		die "Logic error: no local clone of ${r} at ${FOSSIL_DB}. fossil_fetch not used?"
 	fi
 
+	if [ ! -e "${out_dir}" ] ; then
+		mkdir -p "${out_dir}" || die "Could not create output directory at ${out_dir}"
+	fi
+	
+	pushd "${out_dir}" > /dev/null || die "Could not change to output directory at ${out_dir}"
+
 	local new_commit_id=$(
 		fossil timeline -n 1 -t ci -R ${FOSSIL_DB} | awk -e 'BEGIN { FS=" "} NR==2 { gsub(/[^0-9a-f]/,"", $2); printf $2 }'
 	)
 
 	local old_commit_id=$(
-		if [ -e "${out_dir}/.fslckout" ] ; then
-			cd ${out_dir} && \
-				fossil timeline -n 1 -t ci \
-				| awk -e 'BEGIN { FS=" "} NR==2 { gsub(/[^0-9a-f]/,"", $2); printf $2 }'
+		if [ -e ".fslckout" ] ; then
+				fossil timeline -n 1 -t ci | awk -e 'BEGIN { FS=" "} NR==2 { gsub(/[^0-9a-f]/,"", $2); printf $2 }'
 		fi
 	)
 
@@ -430,6 +434,8 @@ fossil_checkout() {
 			echo "   at the commit:            ${new_commit_id}"
 		fi
 	fi
+
+	popd
 
 	export EFOSSIL_VERSION=${new_commit_id}
 	export EFOSSIL_DB=${FOSSIL_DB}
