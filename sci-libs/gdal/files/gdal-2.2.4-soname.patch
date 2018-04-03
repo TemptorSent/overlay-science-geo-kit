@@ -1,0 +1,35 @@
+*** gdal-2.2.4/GDALmake.opt.in.orig	2018-04-03 22:10:27.339466406 -0000
+--- gdal-2.2.4/GDALmake.opt.in	2018-04-03 22:10:50.451466365 -0000
+***************
+*** 134,144 ****
+  GDAL_LIB	= 	$(GDAL_ROOT)/libgdal.a
+  GDAL_SLIB	=	$(GDAL_ROOT)/libgdal.$(SO_EXT)
+  GDAL_SLIB_LINK	=	-L$(GDAL_ROOT) -lgdal
+- #GDAL_SLIB_SONAME = -Wl,-soname,libgdal.$(SO_EXT).@GDAL_VERSION_MAJOR@
+  
+  # Mac OS X Framework definition
+  MACOSX_FRAMEWORK = @MACOSX_FRAMEWORK@
+  
+  #
+  # GDAL/OGR PostgreSQL support.
+  #
+--- 134,152 ----
+  GDAL_LIB	= 	$(GDAL_ROOT)/libgdal.a
+  GDAL_SLIB	=	$(GDAL_ROOT)/libgdal.$(SO_EXT)
+  GDAL_SLIB_LINK	=	-L$(GDAL_ROOT) -lgdal
+  
+  # Mac OS X Framework definition
+  MACOSX_FRAMEWORK = @MACOSX_FRAMEWORK@
+  
++ # for building without libtool
++ GDAL_SLIB_SO_VER =	$(GDAL_VERSION_MAJOR).$(LIBGDAL_CURRENT).$(LIBGDAL_REVISION)
++ ifeq ($(MACOSX_FRAMEWORK),yes)
++ 	GDAL_SLIB_SONAME =	-install_name $(INST_LIB)/libgdal.$(GDAL_VERSION_MAJOR).$(SO_EXT)
++ else
++ 	GDAL_SLIB_SONAME =	-Wl,-soname,libgdal.$(SO_EXT).$(GDAL_VERSION_MAJOR)
++ endif
++ 
++ 
+  #
+  # GDAL/OGR PostgreSQL support.
+  #

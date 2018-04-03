@@ -1,0 +1,317 @@
+
+
+
+EAPI=6
+
+GENTOO_DEPEND_ON_PERL="no"
+PYTHON_COMPAT=( python2_7 python3_{4,5,6} )
+DISTUTILS_OPTIONAL=1
+
+inherit git-r3 autotools perl-module distutils-r1 toolchain-funcs flag-o-matic java-pkg-opt-2
+
+DESCRIPTION="Translator library for raster geospatial data formats (includes OGR support)"
+HOMEPAGE="http://www.gdal.org/"
+#SRC_URI="http://download.osgeo.org/${PN}/${PV}/${P}.tar.gz"
+EGIT_REPO_URI="https://github.com/OSGeo/gdal.git"
+
+SLOT="0/2.3"
+LICENSE="BSD Info-ZIP MIT"
+KEYWORDS=""
+IUSE="armadillo +aux_xml curl cryptopp epsilon dap debug doc ecw fits geos gif gml grass hdf hdf5 java jpeg jpeg2k libkml lzma kakadu mdb mysql mrsid mrsid_lidar netcdf odbc ogdi opencl oracle pdf perl png postgres python rasterlite2 sfcgal spatialite sqlite threads webp xls"
+
+COMMON_DEPEND="
+	dev-libs/expat
+	dev-libs/json-c:=
+	dev-libs/libpcre
+	dev-libs/libxml2:=
+	media-libs/tiff:0=
+	sci-libs/libgeotiff
+	sys-libs/zlib:=[minizip(+)]
+	armadillo? ( sci-libs/armadillo:=[lapack] )
+	curl? ( net-misc/curl )
+	cryptopp? ( dev-libs/crypto++ )
+	epsilon? ( media-libs/epsilon )
+	dap? ( sci-libs/libdap )
+	fits? ( sci-libs/cfitsio:= )
+	geos? ( >=sci-libs/geos-2.2.1 )
+	gif? ( media-libs/giflib:= )
+	gml? ( >=dev-libs/xerces-c-3.1 )
+	hdf? ( >=sci-libs/hdf-4.2.8:=[szip] )
+	hdf5? ( >=sci-libs/hdf5-1.6.4:=[szip] )
+	jpeg? ( virtual/jpeg:0 )
+	jpeg2k? ( media-libs/openjpeg:2= )
+	lzma? ( app-arch/xz-utils )
+	mdb? ( dev-java/jackcess:1 )
+	mysql? ( virtual/mysql )
+	netcdf? ( sci-libs/netcdf:= )
+	odbc? ( dev-db/unixODBC )
+	ogdi? ( sci-libs/ogdi )
+	opencl? ( virtual/opencl )
+	oracle? ( dev-db/oracle-instantclient:= )
+	pdf? ( >=app-text/poppler-0.24.3:= )
+	perl? ( dev-lang/perl:= )
+	png? ( media-libs/libpng:0= )
+	postgres? ( >=dev-db/postgresql-8.4:= )
+	python? (
+		${PYTHON_DEPS}
+		dev-python/numpy[${PYTHON_USEDEP}]
+	)
+	rasterlite2? ( dev-db/rasterlite2 )
+	sfcgal? ( sci-libs/sfcgal )
+	spatialite? ( dev-db/spatialite )
+	sqlite? ( dev-db/sqlite:3 )
+	webp? ( media-libs/libwebp:= )
+	xls? ( dev-libs/freexl )"
+
+RDEPEND="${COMMON_DEPEND}
+	java? ( >=virtual/jre-1.7:* )"
+
+DEPEND="${COMMON_DEPEND}
+	app-shells/bash-completion
+	doc? ( app-doc/doxygen )
+	java? ( >=virtual/jdk-1.7:* )
+	perl? ( dev-lang/swig:0 )
+	python? (
+		dev-lang/swig:0
+		dev-python/setuptools[${PYTHON_USEDEP}]
+	)"
+
+REQUIRED_USE="
+	mdb? ( java )
+	python? ( ${PYTHON_REQUIRED_USE} )
+	spatialite? ( sqlite )
+	rasterlite2? ( spatialite )
+"
+
+PATCHES=(
+	"${FILESDIR}/gdal-2.2.3-soname.patch"
+	#"${FILESDIR}/gdal-2.2.3-json-c-0.13.patch" # bug 641658
+	"${FILESDIR}/gdal-2.2.3-bashcomp-path.patch" # bug 641866
+)
+
+S="${WORKDIR}/${P}/gdal"
+
+src_prepare() {
+	# fix datadir and docdir placement
+	sed -e "s:@datadir@:@datadir@/gdal:" \
+		-e "s:@exec_prefix@/doc:@exec_prefix@/share/doc/${PF}/html:g" \
+		-i "${S}"/GDALmake.opt.in || die
+
+	# the second sed expression should fix bug 371075
+	sed -e "s:setup.py install:setup.py install --root=\$(DESTDIR):" \
+		-e "s:--prefix=\$(DESTDIR):--prefix=:" \
+		-i "${S}"/swig/python/GNUmakefile || die
+
+	# Fix spatialite/sqlite include issue
+	sed -e 's:spatialite/sqlite3.h:sqlite3.h:g' \
+		-i ogr/ogrsf_frmts/sqlite/ogr_sqlite.h || die
+
+	# Fix freexl configure check
+	sed -e 's:FREEXL_LIBS=missing):FREEXL_LIBS=missing,-lm):g' \
+		-i configure.ac || die
+
+	sed -e "s: /usr/: \"${EPREFIX}\"/usr/:g" \
+		-i configure.ac || die
+
+	sed -e 's:^ar:$(AR):g' \
+		-i ogr/ogrsf_frmts/sdts/install-libs.sh || die
+
+	# updated for newer swig (must specify the path to input files)
+	sed -e "s: gdal_array.i: ../include/gdal_array.i:" \
+		-e "s:\$(DESTDIR)\$(prefix):\$(DESTDIR)\$(INST_PREFIX):g" \
+		-i swig/python/GNUmakefile || die "sed python makefile failed"
+	sed -e "s:library_dirs = :library_dirs = /usr/$(get_libdir):g" \
+		-i swig/python/setup.cfg || die "sed python setup.cfg failed"
+
+	default
+	eautoreconf
+}
+
+src_configure() {
+	# Build using c++11 semantics.
+	append-cxxflags $(test-flags-CXX -std=c++11)
+	tc-export AR RANLIB
+	local myopts=()
+
+	if use java; then
+		myopts+=(
+			--with-java=$(java-config --jdk-home 2>/dev/null)
+			--with-jvm-lib=dlopen
+			$(use_with mdb)
+		)
+	else
+		myopts+=( --without-java --without-mdb )
+	fi
+
+	if use sqlite; then
+		append-libs -lsqlite3
+	fi
+
+	# pcidsk is internal, because there is no such library yet released
+	#     also that thing is developed by the gdal people
+	# bsb - legal issues
+	# ingres - same story as oracle oci
+	# podofo - we use poppler instead they are exclusive for each other
+	# tiff - Internal version is always the latest.
+	# jasper - Per Evan Rouault, OpenJPEG should replace all need for JasPer.
+	# kakadu, ecw, mrsid, lura - Commercial software requiring licences.
+	ECONF_SOURCE="${S}" econf \
+		--includedir="${EPREFIX}/usr/include/${PN}" \
+		--enable-shared \
+		--disable-static \
+		$(use_enable debug) \
+		--disable-lto \
+		--disable-pdf-plugin \
+		--with-libtool \
+		--with-hide-internal-symbols \
+		--with-rename-internal-libtiff-symbols=yes \
+		--with-rename-internal-libgeotiff-symbols=yes \
+		$(use_with threads) \
+		--with-libz="${EPREFIX}/usr/" \
+		$(use_with lzma liblzma yes) \
+		$(use_with postgres pg) \
+		$(use_with grass) \
+		$(use_with fits cfitsio) \
+		--with-pcraster=internal \
+		--with-png=internal \
+		--with-dds=no \
+		--with-gta=no \
+		--with-pcidsk=internal \
+		--with-libtiff=internal \
+		--with-libgeotiff=internal \
+		--with-jpeg=internal \
+		--with-jpeg12 \
+		--with-gif=internal \
+		$(use_with ogdi ogdi "${EPREFIX}"/usr) \
+		--with-fme=no \
+		--with-sosi=no \
+		--with-mongocxx=no \
+		$(use_with hdf hdf4) \
+		$(use_with hdf5) \
+		$(use_with netcdf) \
+		--with-jasper=no \
+		$(use_with jpeg2k openjpeg) \
+		--with-fgdb=no \
+		$(use_with ecw) \
+		$(use_with kakadu) \
+		$(use_with mrsid) \
+		$(use_with mrsid jp2mrsid) \
+		$(use_with mrsid_lidar) \
+		--with-jp2lura=no \
+		--with-msg=no \
+		--with-bsb=no \
+		$(use_with oracle oci) \
+		--with-grib \
+		--with-gnm \
+		$(use_with mysql mysql "${EPREFIX}"/usr/bin/mysql_config) \
+		--with-ingres=no \
+		$(use_with gml xerces) \
+		--with-expat \
+		$(use_with libkml) \
+		$(use_with odbc) \
+		$(use_with dap dods-root "${EPREFIX}"/usr) \
+		$(use_with curl) \
+		--with-xml2 \
+		$(use_with spatialite) \
+		$(use_with sqlite sqlite3 "${EPREFIX}"/usr) \
+		$(use_with rasterlite2) \
+		--with-pcre \
+		--with-teigha=no \
+		--with-idb=no \
+		--with-sde=no \
+		$(use_with epsilon) \
+		$(use_with webp) \
+		$(use_with geos) \
+		$(use_with sfcgal) \
+		--with-qhull=internal \
+		$(use_with opencl) \
+		$(use_with xls freexl) \
+		--with-libjson-c=internal \
+		$(use_with aux_xml pam) \
+		$(use_with pdf poppler) \
+		--with-podofo=no \
+		--with-pdfium=no \
+		$(use_with perl) \
+		--with-php=no \
+		$(use_with python) \
+		$(use_with armadillo) \
+		$(use_with cryptopp) \
+		--with-mrf \
+		${myopts}
+
+	# mysql-config puts this in (and boy is it a PITA to get it out)
+	if use mysql; then
+		sed -e "s: -rdynamic : :" \
+			-i GDALmake.opt || die "sed LIBS failed"
+	fi
+}
+
+src_compile() {
+	if use perl; then
+		rm "${S}"/swig/perl/*_wrap.cpp # Don't die, they may not exist yet! || die
+		emake -C "${S}"/swig/perl generate
+	fi
+
+	# gdal-config needed before generating Python bindings
+	default
+
+	if use perl ; then
+		pushd "${S}"/swig/perl > /dev/null || die
+		perl-module_src_configure
+		perl-module_src_compile
+		popd > /dev/null || die
+	fi
+
+	if use python; then
+		rm -f "${S}"/swig/python/*_wrap.cpp || die
+		emake -C "${S}"/swig/python generate
+		pushd "${S}"/swig/python > /dev/null || die
+		distutils-r1_src_compile
+		popd > /dev/null || die
+	fi
+
+	use doc && emake docs && emake man
+}
+
+src_install() {
+	if use perl ; then
+		pushd "${S}"/swig/perl > /dev/null || die
+		perl-module_src_install
+		popd > /dev/null || die
+		sed -e 's:BINDINGS        =       \(.*\) perl:BINDINGS        =       \1:g' \
+			-i GDALmake.opt || die
+	fi
+
+	use perl && perl_delete_localpod
+
+	local DOCS=( Doxyfile HOWTO-RELEASE NEWS )
+	use doc && HTML_DOCS=( html/. )
+
+	default
+
+	python_install() {
+		distutils-r1_python_install
+		python_doscript scripts/*.py
+	}
+
+	if use python; then
+		# Don't clash with gdal's docs
+		unset DOCS HTML_DOCS
+
+		pushd "${S}"/swig/python > /dev/null || die
+		distutils-r1_src_install
+		popd > /dev/null || die
+
+		newdoc swig/python/README.txt README-python.txt
+
+		insinto /usr/share/${PN}/samples
+		doins -r swig/python/samples/
+	fi
+
+	use doc && doman "${S}"/man/man*/*
+}
+
+pkg_postinst() {
+	elog "Check available image and data formats after building with"
+	elog "gdalinfo and ogrinfo (using the --formats switch)."
+}
