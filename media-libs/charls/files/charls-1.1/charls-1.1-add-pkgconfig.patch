@@ -1,0 +1,16 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b11ff66..347593a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -55,6 +55,11 @@ install (TARGETS CharLS RUNTIME DESTINATION bin
+                         ARCHIVE DESTINATION lib${LIB_SUFFIX})
+ install (FILES ${charls_HEADERS} DESTINATION include/CharLS)
+ 
++configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/src/charls.pc.cmakein
++	${CMAKE_CURRENT_BINARY_DIR}/charls-${CHARLS_LIB_MAJOR_VERSION}.pc )
++
++install (FILES ${CMAKE_CURRENT_BINARY_DIR}/charls-${CHARLS_LIB_MAJOR_VERSION}.pc DESTINATION lib${LIB_SUFFIX}/pkgconfig)
++
+ if (BUILD_TESTING)
+   add_executable(charlstest test/main.cpp test/time.cpp test/util.cpp test/bitstreamdamage.cpp test/compliance.cpp test/performance.cpp test/dicomsamples.cpp)
+   target_link_libraries (charlstest CharLS)

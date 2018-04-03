@@ -1,0 +1,14 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f0eaa9e..d04f6b1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -41,7 +41,8 @@ endif()
+ set (charls_HEADERS
+ src/context.h         src/defaulttraits.h    src/jpegimagedatasegment.h  src/jpegsegment.h           src/lookuptable.h       src/publictypes.h
+ src/colortransform.h  src/contextrunmode.h   src/encoderstrategy.h       src/jpegmarker.h            src/losslesstraits.h    src/scan.h
+-src/config.h          src/decoderstrategy.h  src/header.h                src/jpegmarkersegment.h     src/jpegstreamwriter.h  src/processline.h     src/util.h)
++src/config.h          src/decoderstrategy.h  src/header.h                src/jpegmarkersegment.h     src/jpegstreamwriter.h  src/processline.h
++src/interface.h       src/util.h)
+ 
+ add_library(CharLS src/interface.cpp src/jpegls.cpp src/jpegmarkersegment.cpp src/header.cpp src/jpegstreamwriter.cpp)
+ set (CHARLS_LIB_MAJOR_VERSION 1)

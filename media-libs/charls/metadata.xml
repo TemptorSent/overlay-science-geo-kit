@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="person">
+	<email>chrisgiorgi@gmail.com</email>
+	<name>Chris A. Giorgi</name>
+	</maintainer>
+	<longdescription lang="en">
+		CharLS is source code that you can use to build a JPEG-LS compliant compressor/decompressor codec.
+	</longdescription>
+</pkgmetadata>
