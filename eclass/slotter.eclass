@@ -98,6 +98,15 @@ slotter-enversion_solibs() {
 }
 
 
+# @FUNCTION: slotter-solib_get_soname_slotted()
+# @USAGE: <solib> [soslot]
+# @DESCRIPTION:
+# Get slotted name for specified solib. Slot may be specified explicitly
+# as an argument, otherwise it will pick the first defined of the following:
+# ESLOTTER_SLOT_FORCED env variable,
+# detected soname for the solib,
+# ESLOTTER_SLOT_DEFAULT,
+# or 0.
 slotter-solib_get_soname_slotted() {
 	local my_solib="${1}"
 	local my_sobase="${my_solib##*/}"
@@ -110,17 +119,30 @@ slotter-solib_get_soname_slotted() {
 }
 
 
+# @FUNCTION: slotter-solib_get_soname
+# @USAGE: <solib>
+# @DESCRIPTION:
+# Detect soname from the given solib using objdump.
 slotter-solib_get_soname() {
 	objdump -p "${1}" | sed -n -e 's/^[[:space:]]*SONAME[[:space:]]*//p'
 }
 
 
+# @FUNCTION: slotter-soname_to_soname_slotted()
+# @USAGE: <soname>
+# @DESCRIPTION:
+# Convert raw soname to slotted soname following debian format.
 slotter-soname_to_soname_slotted() {
 	# Regex adapted from Debian Policy Manual v4.1.3.0, Section 8.1, Listing 2 to not alter case.
 	echo "${1}" | LC_ALL=C sed -r -e 's/([0-9])\.so\./\1-/; s/\.so(\.|$)//; y/_/-/'
 }
 
 
+# @FUNCTION: slotter-pkg_postinst
+# @USAGE: 
+# @DESCRIPTION:
+# Check if the version we're installing is the best_version for our catpackage.
+# If so, update each libname.so link to point to our new versioned libname.so.x.
 slotter-pkg_postinst() {
 	local newest="$(best_version ${CATEGORY}/${PN})"
 	if [ "${newest#*/}" == "${PF}" ] ; then
