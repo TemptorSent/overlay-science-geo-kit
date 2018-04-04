@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="person">
+	<email>chrisgiorgi@gmail.com</email>
+	<name>Chris A. Giorgi</name>
+	</maintainer>
+<use>
+	<flag name="charls">Add the <pkg>media-libs/charls</pkg> library to support JPEG-LS image compression</flag>
+	<flag name="openjpeg">Add the <pkg>media-libs/openjpeg</pkg> library to support JPEG2000 image compression</flag>
+	<flag name="webp">Add the <pkg>media-libs/libwebp</pkg> library to support webp image compression</flag>
+	<flag name="lzma">Add the <pkg>app-arch/xz-utils</pkg> package to support lzma compressed data</flag>
+</use>
+</pkgmetadata>

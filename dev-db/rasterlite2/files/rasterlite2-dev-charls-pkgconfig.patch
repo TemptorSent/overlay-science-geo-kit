@@ -1,0 +1,100 @@
+diff --git a/configure.ac b/configure.ac
+index 6cc1797..4e0afcc 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -207,8 +207,9 @@ AC_ARG_ENABLE(charls, [AS_HELP_STRING(
+   [--enable-charls], [enables CharLS inclusion [default=yes]])],
+   [], [enable_charls=yes])
+ if test x"$enable_charls" != "xno"; then
+-    AC_CHECK_HEADERS(CharLS/interface.h,, [AC_MSG_ERROR([cannot find CharLS/interface.h, bailing out])])
+-    AC_CHECK_LIB(CharLS,JpegLsEncode,,AC_MSG_ERROR(['libCharLS' is required but it doesn't seems to be installed on this system.]),-lm)
++	PKG_CHECK_MODULES([LIBCHARLS], [charls-1],, AC_MSG_ERROR(['CharLS' support request, but could not be found]))
++    AC_SUBST(LIBCHARLS_CFLAGS)
++    AC_SUBST(LIBCHARLS_LIBS)
+ else
+   AC_DEFINE(OMIT_CHARLS)
+ fi
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 6e50482..5ced8f3 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -1,7 +1,7 @@
+ 
+ AM_CFLAGS = @LIBPNG_CFLAGS@ @LIBWEBP_CFLAGS@ @LIBLZMA_CFLAGS@ \
+ 	@LIBCAIRO_CFLAGS@ @LIBCURL_CFLAGS@ @LIBXML2_CFLAGS@ \
+-	@LIBFREETYPE2_CFLAGS@
++	@LIBFREETYPE2_CFLAGS@ @LIBCHARLS_CFLAGS@
+ 
+ AM_CPPFLAGS = @CFLAGS@ @CPPFLAGS@
+ AM_CPPFLAGS += -I$(top_srcdir)/headers
+@@ -20,7 +20,7 @@ librasterlite2_la_SOURCES = rasterlite2.c rl2raw.c rl2codec.c \
+ 
+ librasterlite2_la_LIBADD = @LIBPNG_LIBS@ @LIBWEBP_LIBS@ \
+ 	@LIBLZMA_LIBS@ @LIBCAIRO_LIBS@	@LIBCURL_LIBS@ \
+-	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@
++	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@ @LIBCHARLS_LIBS@
+ 
+ if MINGW
+ librasterlite2_la_LDFLAGS = -avoid-version -no-undefined
+@@ -41,7 +41,7 @@ mod_rasterlite2_la_SOURCES = rasterlite2.c rl2raw.c rl2codec.c \
+ 
+ mod_rasterlite2_la_LIBADD = @LIBPNG_LIBS@ @LIBWEBP_LIBS@ \
+ 	@LIBLZMA_LIBS@ @LIBCAIRO_LIBS@ @LIBCURL_LIBS@ \
+-	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@
++	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@ @LIBCHARLS_LIBS@
+ 
+ mod_rasterlite2_la_CPPFLAGS = @CFLAGS@ @CPPFLAGS@
+ mod_rasterlite2_la_CPPFLAGS += -I$(top_srcdir)/headers -I.
+diff --git a/test/Makefile.am b/test/Makefile.am
+index 76c5d0f..d44d4e2 100644
+--- a/test/Makefile.am
++++ b/test/Makefile.am
+@@ -31,7 +31,7 @@ AM_CPPFLAGS = -I@srcdir@/../headers @LIBXML2_CFLAGS@
+ AM_LDFLAGS = -L../src -lrasterlite2 @LIBCAIRO_LIBS@ @LIBPNG_LIBS@ \
+ 	@LIBWEBP_LIBS@ @LIBLZMA_LIBS@ @LIBSPATIALITE_LIBS@ \
+ 	@LIBCURL_LIBS@ @LIBXML2_LIBS@  @LIBFREETYPE2_LIBS@ \
+-	$(GCOV_FLAGS)
++	@LIBCHARLS_LIBS@ $(GCOV_FLAGS)
+ 
+ TESTS = $(check_PROGRAMS)
+ 
+diff --git a/tools/Makefile.am b/tools/Makefile.am
+index ef4fa8f..a755fa0 100644
+--- a/tools/Makefile.am
++++ b/tools/Makefile.am
+@@ -1,6 +1,6 @@
+ AM_CFLAGS = @LIBPNG_CFLAGS@ @LIBWEBP_CFLAGS@ @LIBLZMA_CFLAGS@ \
+ 	@LIBSPATIALITE_CFLAGS@ @LIBCAIRO_CFLAGS@ @LIBCURL_CFLAGS@ \
+-	@LIBXML2_CFLAGS@ @LIBFREETYPE2_CFLAGS@
++	@LIBXML2_CFLAGS@ @LIBFREETYPE2_CFLAGS@ @LIBCHARLS_CFLAGS@
+ AM_LDFLAGS = -L../src 
+ 
+ bin_PROGRAMS = rl2sniff rl2tool wmslite
+@@ -16,23 +16,23 @@ wmslite_SOURCES = wmslite.c
+ 
+ rl2sniff_LDADD = @LIBPNG_LIBS@ @LIBWEBP_LIBS@ @LIBLZMA_LIBS@ \
+ 	@LIBSPATIALITE_LIBS@ @LIBCAIRO_LIBS@ @LIBCURL_LIBS@ \
+-	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@ \
++	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@ @LIBCHARLS_LIBS@ \
+ 	-lrasterlite2 
+ 	
+ rl2tool_LDADD = @LIBPNG_LIBS@ @LIBWEBP_LIBS@ @LIBLZMA_LIBS@ \
+ 	@LIBSPATIALITE_LIBS@ @LIBCAIRO_LIBS@ @LIBCURL_LIBS@ \
+-	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@ \
++	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@ @LIBCHARLS_LIBS@ \
+ 	-lrasterlite2 
+ 
+ if MINGW
+ wmslite_LDADD = @LIBPNG_LIBS@ @LIBWEBP_LIBS@ @LIBLZMA_LIBS@ \
+ 	@LIBSPATIALITE_LIBS@ @LIBCAIRO_LIBS@ @LIBCURL_LIBS@ \
+-	@LIBXML2_LIBS@ \
++	@LIBXML2_LIBS@ @LIBCHARLS_LIBS@ \
+ 	-lrasterlite2 -lws2_32
+ else
+ wmslite_LDADD = @LIBPNG_LIBS@ @LIBWEBP_LIBS@ @LIBLZMA_LIBS@ \
+ 	@LIBSPATIALITE_LIBS@ @LIBCAIRO_LIBS@ @LIBCURL_LIBS@ \
+-	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@ \
++	@LIBXML2_LIBS@ @LIBFREETYPE2_LIBS@ @LIBCHARLS_LIBS@ \
+ 	-lrasterlite2 
+ endif
+ 
