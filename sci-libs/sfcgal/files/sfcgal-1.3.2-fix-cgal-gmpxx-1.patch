@@ -1,0 +1,770 @@
+From 644a289a9fa88327334447a42adf225922613324 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=A9bastien=20Loriot?= <sebastien.loriot@cgal.org>
+Date: Thu, 15 Mar 2018 14:06:39 +0100
+Subject: [PATCH 1/9] compatibility with gmpxx
+
+---
+ src/detail/io/Serialization.cpp | 48 ++++++++++++++++++++++++++++++++
+ src/detail/io/Serialization.h   | 61 +++++++++++++++++++++++++++++++++++++++++
+ src/detail/io/WktReader.cpp     |  4 +--
+ 3 files changed, 111 insertions(+), 2 deletions(-)
+
+diff --git a/src/detail/io/Serialization.cpp b/src/detail/io/Serialization.cpp
+index 19a0964c..da4c3758 100644
+--- a/src/detail/io/Serialization.cpp
++++ b/src/detail/io/Serialization.cpp
+@@ -169,5 +169,53 @@ void load( boost::archive::binary_iarchive& ar, CGAL::Gmpz& z, const unsigned in
+     }
+ }
+ 
++#ifdef CGAL_USE_GMPXX
++void save( boost::archive::text_oarchive& ar, const mpz_class& z, const unsigned int /*version*/ )
++{
++    std::ostringstream ostr;
++    ostr << z;
++    std::string str = ostr.str();
++    ar << str;
++}
++
++// specialization for binary archives
++void save ( boost::archive::binary_oarchive& ar, const mpz_class& z, const unsigned int/* version*/ )
++{
++    mpz_srcptr mpz = z.get_mpz_t();
++    int32_t size = mpz->_mp_size;
++    ar& size;
++    uint32_t rsize = size >= 0 ? size : -size;
++
++    for ( uint32_t i = 0; i < rsize; ++i ) {
++        ar& mpz->_mp_d[i];
++    }
++}
++
++
++void load( boost::archive::text_iarchive& ar, mpz_class& z, const unsigned int /*version*/ )
++{
++    std::string line;
++    ar >> line;
++    std::istringstream istr( line );
++    istr >> z;
++}
++
++void load( boost::archive::binary_iarchive& ar, mpz_class& z, const unsigned int /*version*/ )
++{
++    int32_t size;
++    uint32_t rsize;
++    mpz_ptr mpz = z.get_mpz_t();
++    ar& size;
++    rsize = size >= 0 ? size : -size;
++    mpz->_mp_size = size;
++    _mpz_realloc( mpz, rsize );
++    uint32_t i;
++
++    for ( i = 0; i < rsize; ++i ) {
++        ar& mpz->_mp_d[i];
++    }
++}
++#endif
++
+ }
+ }
+diff --git a/src/detail/io/Serialization.h b/src/detail/io/Serialization.h
+index 40dbbdb7..b92bf33a 100644
+--- a/src/detail/io/Serialization.h
++++ b/src/detail/io/Serialization.h
+@@ -34,6 +34,10 @@
+ #include <boost/archive/binary_iarchive.hpp>
+ #include <boost/archive/text_oarchive.hpp>
+ #include <boost/archive/text_iarchive.hpp>
++#ifdef CGAL_USE_GMPXX
++#include <CGAL/mpz_class.h>
++#include <CGAL/mpq_class.h>
++#endif
+ 
+ namespace SFCGAL {
+ 
+@@ -132,6 +136,63 @@ void serialize( Archive& ar, CGAL::Gmpq& q, const unsigned int version )
+     split_free( ar, q, version );
+ }
+ 
++#ifdef CGAL_USE_GMPXX
++/**
++ * Serialization of mpz_class for text archives
++ */
++SFCGAL_API void save( boost::archive::text_oarchive& ar, const mpz_class& z, const unsigned int version );
++
++/**
++ * Serialization of mpz_class for binary archives
++ */
++SFCGAL_API void save ( boost::archive::binary_oarchive& ar, const mpz_class& z, const unsigned int version );
++
++/**
++ * Unserialization of mpz_class for text archives
++ */
++SFCGAL_API void load( boost::archive::text_iarchive& ar, mpz_class& z, const unsigned int version );
++
++/**
++ * Unserialization of mpz_class for binary archives
++ */
++SFCGAL_API void load( boost::archive::binary_iarchive& ar, mpz_class& z, const unsigned int version );
++
++template<class Archive>
++void serialize( Archive& ar, mpz_class& z, const unsigned int version )
++{
++    split_free( ar, z, version );
++}
++
++/**
++ * Serializer of mpq_class
++ */
++template<class Archive>
++void save( Archive& ar, const mpq_class& q, const unsigned int /*version*/ )
++{
++    mpz_class n = q.get_num();
++    mpz_class d = q.get_den();
++    ar& n;
++    ar& d;
++}
++
++/**
++ * Unserializer of mpq_class
++ */
++template<class Archive>
++void load( Archive& ar, mpq_class& q, const unsigned int /*version*/ )
++{
++    mpz_class n;
++    mpz_class d;
++    ar& n;
++    ar& d;
++    q = mpq_class( n, d );
++}
++template<class Archive>
++void serialize( Archive& ar, mpq_class& q, const unsigned int version )
++{
++    split_free( ar, q, version );
++}
++#endif
+ 
+ /**
+  * Serializer of Kernel::FT
+diff --git a/src/detail/io/WktReader.cpp b/src/detail/io/WktReader.cpp
+index 1c1c98af..6963ab6e 100644
+--- a/src/detail/io/WktReader.cpp
++++ b/src/detail/io/WktReader.cpp
+@@ -647,7 +647,7 @@ bool WktReader::readPointCoordinate( Point& p )
+         }
+ 
+         p = Point( coordinates[0], coordinates[1], coordinates[2] );
+-        p.setM( coordinates[3].to_double() );
++        p.setM( CGAL::to_double(coordinates[3]) );
+     }
+     else if ( _isMeasured && ! _is3D ) {
+         // XYM
+@@ -656,7 +656,7 @@ bool WktReader::readPointCoordinate( Point& p )
+         }
+ 
+         p = Point( coordinates[0], coordinates[1] );
+-        p.setM( coordinates[2].to_double() );
++        p.setM( CGAL::to_double(coordinates[2]) );
+     }
+     else if ( coordinates.size() == 3 ) {
+         // XYZ
+
+From 3c840d79b21993a0b7a590eb3a57cd25194a0c4b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=A9bastien=20Loriot?= <sebastien.loriot@cgal.org>
+Date: Thu, 15 Mar 2018 17:03:48 +0100
+Subject: [PATCH 2/9] fix gmpxx compatibility in tests
+
+---
+ src/numeric.cpp                       | 42 +++++++++++++++++++++++++++++++++++
+ test/unit/SFCGAL/KernelTest.cpp       |  8 ++++---
+ test/unit/SFCGAL/io/WktReaderTest.cpp | 14 ++++++++----
+ 3 files changed, 57 insertions(+), 7 deletions(-)
+
+diff --git a/src/numeric.cpp b/src/numeric.cpp
+index db65cf8d..c03240af 100644
+--- a/src/numeric.cpp
++++ b/src/numeric.cpp
+@@ -58,6 +58,48 @@ CGAL::Gmpz round( const CGAL::Gmpq& v )
+     }
+ }
+ 
++#ifdef CGAL_USE_GMPXX
++///
++///
++///
++mpz_class floor( const mpq_class& v )
++{
++    return v.get_num() / v.get_den() ;
++}
++
++///
++///
++///
++mpz_class ceil( const mpq_class& v )
++{
++    mpz_class result( 0 ) ;
++    mpz_cdiv_q( result.get_mpz_t(), v.get_num().get_mpz_t(), v.get_den().get_mpz_t() ) ;
++    return result ;
++}
++
++///
++///
++///
++mpz_class round( const mpq_class& v )
++{
++    if ( v < 0 ) {
++        //ceil( v - 0.5 ) ;
++        mpq_class tmp = v - mpq_class( 1,2 );
++        return ceil( tmp );
++    }
++    else if ( v == 0 ) {
++        return 0 ;
++    }
++    else {
++        //floor( v + 0.5 ) ;
++        mpq_class tmp = v + mpq_class( 1,2 );
++        return floor( tmp );
++    }
++}
++#endif
++
++
++
+ }//SFCGAL
+ 
+ 
+diff --git a/test/unit/SFCGAL/KernelTest.cpp b/test/unit/SFCGAL/KernelTest.cpp
+index 63e91c4e..ddd0cf0b 100644
+--- a/test/unit/SFCGAL/KernelTest.cpp
++++ b/test/unit/SFCGAL/KernelTest.cpp
+@@ -22,6 +22,7 @@
+ #include <boost/test/unit_test.hpp>
+ 
+ #include <SFCGAL/Kernel.h>
++#include <CGAL/mpq_class.h>
+ #include <SFCGAL/Coordinate.h>
+ #include <SFCGAL/LineString.h>
+ 
+@@ -61,10 +62,11 @@ BOOST_AUTO_TEST_CASE( testSerializeDeserialize )
+     Kernel::FT a = 1 ;
+     a /= 3 ;
+ 
+-    std::ostringstream oss ;
+-    oss << CGAL::exact( a ) ;
++    std::stringstream ss ;
++    ss << CGAL::exact( a ) ;
+ 
+-    Kernel::FT b( oss.str() );
++    Kernel::FT b;
++    ss >> b;
+     BOOST_CHECK_EQUAL( a, b ) ;
+ }
+ 
+diff --git a/test/unit/SFCGAL/io/WktReaderTest.cpp b/test/unit/SFCGAL/io/WktReaderTest.cpp
+index dafa8c4d..cac47533 100644
+--- a/test/unit/SFCGAL/io/WktReaderTest.cpp
++++ b/test/unit/SFCGAL/io/WktReaderTest.cpp
+@@ -246,10 +246,16 @@ BOOST_AUTO_TEST_CASE( wkt_exactTest )
+     BOOST_REQUIRE_EQUAL( g->as< LineString >().numPoints(), 2U );
+     Kernel::Exact_kernel::FT x = CGAL::exact( g->as<LineString>().pointN( 0 ).x() );
+     Kernel::Exact_kernel::FT y = CGAL::exact( g->as<LineString>().pointN( 0 ).y() );
+-    BOOST_CHECK_EQUAL( x.numerator(), 2 );
+-    BOOST_CHECK_EQUAL( x.denominator(), 3 );
+-    BOOST_CHECK_EQUAL( y.numerator(), 3 );
+-    BOOST_CHECK_EQUAL( y.denominator(), 2 );
++
++    CGAL::Fraction_traits<Kernel::Exact_kernel::FT>::Numerator_type xn, xd, yn, yd;
++    CGAL::Fraction_traits<Kernel::Exact_kernel::FT>::Decompose decomp;
++    decomp(x, xn, xd);
++    decomp(y, yn, yd);
++
++    BOOST_CHECK_EQUAL( xn, 2 );
++    BOOST_CHECK_EQUAL( xd, 3 );
++    BOOST_CHECK_EQUAL( yn, 3 );
++    BOOST_CHECK_EQUAL( yd, 2 );
+ }
+ 
+ BOOST_AUTO_TEST_CASE( charArrayRead )
+
+From 3bb19aaf2343ce13b6ce2a0a0d9d59db036e1e0e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=A9bastien=20Loriot?= <sebastien.loriot@cgal.org>
+Date: Thu, 15 Mar 2018 17:04:20 +0100
+Subject: [PATCH 3/9] update cmake scripts
+
+---
+ test/garden/CMakeLists.txt                       | 8 +++-----
+ test/regress/convex_hull/CMakeLists.txt          | 9 ++++-----
+ test/regress/polygon_triangulator/CMakeLists.txt | 9 ++++-----
+ test/regress/standalone/CMakeLists.txt           | 9 ++++-----
+ test/unit/CMakeLists.txt                         | 9 +++------
+ 5 files changed, 18 insertions(+), 26 deletions(-)
+
+diff --git a/test/garden/CMakeLists.txt b/test/garden/CMakeLists.txt
+index cf83e06b..b9c76666 100644
+--- a/test/garden/CMakeLists.txt
++++ b/test/garden/CMakeLists.txt
+@@ -6,12 +6,10 @@ add_executable( ${REGRESS_NAME} ${SFCGAL_REGRESS_GARDEN_TEST_SOURCES} )
+ 
+ target_link_libraries( ${REGRESS_NAME}
+ 	SFCGAL
+-	${Boost_LIBRARIES}
+-	${CGAL_LIBRARIES}
++        CGAL::CGAL
++        CGAL::CGAL_Core
+ )
+-if( ${SFCGAL_WITH_MPFR} )
+-  target_link_libraries( ${REGRESS_NAME} ${MPFR_LIBRARIES} )
+-endif( ${SFCGAL_WITH_MPFR} )
++target_link_libraries( ${REGRESS_NAME} ${CGAL_3RD_PARTY_LIBRARIES} )
+ 
+ set_target_properties( ${REGRESS_NAME} PROPERTIES DEBUG_POSTFIX "d" )
+ install( TARGETS ${REGRESS_NAME} DESTINATION bin )
+diff --git a/test/regress/convex_hull/CMakeLists.txt b/test/regress/convex_hull/CMakeLists.txt
+index b54fa50e..b78a2f41 100644
+--- a/test/regress/convex_hull/CMakeLists.txt
++++ b/test/regress/convex_hull/CMakeLists.txt
+@@ -6,12 +6,11 @@ add_executable( ${REGRESS_NAME} ${SFCGAL_REGRESS_CONVEX_HULL_TEST_SOURCES} )
+ 
+ target_link_libraries( ${REGRESS_NAME}
+ 	SFCGAL
+-	${Boost_LIBRARIES}
+-	${CGAL_LIBRARIES}
++        CGAL::CGAL
++        CGAL::CGAL_Core
+ )
+-if( ${SFCGAL_WITH_MPFR} )
+-  target_link_libraries( ${REGRESS_NAME} ${MPFR_LIBRARIES} )
+-endif( ${SFCGAL_WITH_MPFR} )
++
++target_link_libraries( ${REGRESS_NAME} ${CGAL_3RD_PARTY_LIBRARIES} )
+ 
+ set_target_properties( ${REGRESS_NAME} PROPERTIES DEBUG_POSTFIX "d" )
+ install( TARGETS ${REGRESS_NAME} DESTINATION bin )
+diff --git a/test/regress/polygon_triangulator/CMakeLists.txt b/test/regress/polygon_triangulator/CMakeLists.txt
+index 38e4fba9..40344db5 100644
+--- a/test/regress/polygon_triangulator/CMakeLists.txt
++++ b/test/regress/polygon_triangulator/CMakeLists.txt
+@@ -6,12 +6,11 @@ add_executable( ${REGRESS_NAME} ${SFCGAL_REGRESS_POLYGON_TRIANGULATOR_TEST_SOURC
+ 
+ target_link_libraries( ${REGRESS_NAME}
+ 	SFCGAL
+-	${Boost_LIBRARIES}
+-	${CGAL_LIBRARIES}
++        CGAL::CGAL
++        CGAL::CGAL_Core
+ )
+-if( ${SFCGAL_WITH_MPFR} )
+-  target_link_libraries( ${REGRESS_NAME} ${MPFR_LIBRARIES} )
+-endif( ${SFCGAL_WITH_MPFR} )
++target_link_libraries( ${REGRESS_NAME} ${CGAL_3RD_PARTY_LIBRARIES})
++
+ 
+ set_target_properties( ${REGRESS_NAME} PROPERTIES DEBUG_POSTFIX "d" )
+ install( TARGETS ${REGRESS_NAME} DESTINATION bin )
+diff --git a/test/regress/standalone/CMakeLists.txt b/test/regress/standalone/CMakeLists.txt
+index 7459e5ee..a42be663 100644
+--- a/test/regress/standalone/CMakeLists.txt
++++ b/test/regress/standalone/CMakeLists.txt
+@@ -4,12 +4,11 @@ add_executable( standalone-regress-test-SFCGAL ${SFCGAL_REGRESS_STANDALONE_TEST_
+ 
+ target_link_libraries( standalone-regress-test-SFCGAL 
+ 	SFCGAL
+-	${Boost_LIBRARIES}
+-	${CGAL_LIBRARIES}
++        CGAL::CGAL
++        CGAL::CGAL_Core
+ )
+-if( ${SFCGAL_WITH_MPFR} )
+-  target_link_libraries( standalone-regress-test-SFCGAL ${MPFR_LIBRARIES} )
+-endif( ${SFCGAL_WITH_MPFR} )
++target_link_libraries( standalone-regress-test-SFCGAL ${CGAL_3RD_PARTY_LIBRARIES} )
++
+ 
+ set_target_properties( standalone-regress-test-SFCGAL PROPERTIES DEBUG_POSTFIX "d" )
+ install( TARGETS standalone-regress-test-SFCGAL DESTINATION bin )
+diff --git a/test/unit/CMakeLists.txt b/test/unit/CMakeLists.txt
+index 675c7c9a..13be04a4 100644
+--- a/test/unit/CMakeLists.txt
++++ b/test/unit/CMakeLists.txt
+@@ -3,13 +3,10 @@ file( GLOB_RECURSE SFCGAL_UNIT_TEST_SOURCES *.cpp )
+ add_executable( unit-test-SFCGAL ${SFCGAL_UNIT_TEST_SOURCES} )
+ target_link_libraries( unit-test-SFCGAL 
+ 	SFCGAL
+-	${Boost_LIBRARIES}
+-	${CGAL_LIBRARIES}
++        CGAL::CGAL
++        CGAL::CGAL_Core
+ )
+-if( ${SFCGAL_WITH_MPFR} )
+-  target_link_libraries( unit-test-SFCGAL ${MPFR_LIBRARIES} ${GMP_LIBRARIES} )
+-endif( ${SFCGAL_WITH_MPFR} )
+-
++target_link_libraries(unit-test-SFCGAL ${CGAL_3RD_PARTY_LIBRARIES})
+ 
+ #include( PrecompiledHeader )
+ #if(PCHSupport_FOUND)
+
+From 8de5943b4f392b1a6b7b4d89bfed5d735cb9a277 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=A9bastien=20Loriot?= <sebastien.loriot@cgal.org>
+Date: Thu, 22 Mar 2018 19:31:13 +0100
+Subject: [PATCH 4/9] fix I/O input with gmpxx + make it similar to Gmpq
+
+---
+ src/Coordinate.cpp                   |  8 ++++----
+ src/detail/io/WktWriter.cpp          | 22 ++++++++++++++++++++--
+ src/detail/tools/InputStreamReader.h |  2 +-
+ 3 files changed, 25 insertions(+), 7 deletions(-)
+
+diff --git a/src/Coordinate.cpp b/src/Coordinate.cpp
+index 014e9dfb..8cc3f1dd 100644
+--- a/src/Coordinate.cpp
++++ b/src/Coordinate.cpp
+@@ -267,10 +267,10 @@ class RoundVisitor : public boost::static_visitor<> {
+ 
+     Kernel::FT _roundFT( const Kernel::FT& v ) const {
+         #ifdef CGAL_USE_GMPXX
+-        return Kernel::FT( ::mpq_class(
+-                               SFCGAL::round( v.exact() * _scaleFactor ),
+-                               _scaleFactor
+-                           ) ) ;
++        ::mpq_class q( SFCGAL::round( v.exact() * _scaleFactor ),
++                                    _scaleFactor) ;
++        q.canonicalize();
++        return Kernel::FT(q);
+         #else
+         return Kernel::FT( CGAL::Gmpq(
+                                SFCGAL::round( v.exact() * _scaleFactor ),
+diff --git a/src/detail/io/WktWriter.cpp b/src/detail/io/WktWriter.cpp
+index 900cdc8d..31dc09b7 100644
+--- a/src/detail/io/WktWriter.cpp
++++ b/src/detail/io/WktWriter.cpp
+@@ -40,6 +40,22 @@ namespace SFCGAL {
+ namespace detail {
+ namespace io {
+ 
++namespace impl {
++std::ostream& writeFT(std::ostream& s, const CGAL::Gmpq& ft)
++{
++  s << ft;
++  return s;
++}
++
++#ifdef CGAL_USE_GMPXX
++std::ostream& writeFT(std::ostream& s, const mpq_class& ft)
++{
++  s << ft.get_num() << "/" << ft.get_den();
++  return s;
++}
++#endif
++} //end of impl namespace
++
+ ///
+ ///
+ ///
+@@ -135,10 +151,12 @@ void WktWriter::writeCoordinateType( const Geometry& g )
+ void WktWriter::writeCoordinate( const Point& g )
+ {
+     if ( _exactWrite ) {
+-        _s << CGAL::exact( g.x() ) << " " << CGAL::exact( g.y() );
++        impl::writeFT(_s, CGAL::exact( g.x() )) << " ";
++        impl::writeFT(_s, CGAL::exact( g.y() ));
+ 
+         if ( g.is3D() ) {
+-            _s << " " << CGAL::exact( g.z() );
++            _s << " ";
++            impl::writeFT(_s, CGAL::exact( g.z() ));
+         }
+     }
+     else {
+diff --git a/src/detail/tools/InputStreamReader.h b/src/detail/tools/InputStreamReader.h
+index d2f1d667..d0535669 100644
+--- a/src/detail/tools/InputStreamReader.h
++++ b/src/detail/tools/InputStreamReader.h
+@@ -150,7 +150,7 @@ class BasicInputStreamReader {
+             skipWhiteSpaces();
+         }
+ 
+-        if ( _s >> value ) {
++        if ( CGAL::Input_rep<T>(value)(_s) ) {
+             commit();
+             return true ;
+         }
+
+From 78f0af4c45eed795a8bf23bf9c8c6fa357390373 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=A9bastien=20Loriot?= <sebastien.loriot@cgal.org>
+Date: Wed, 28 Mar 2018 14:22:47 +0200
+Subject: [PATCH 5/9] remove obsolete find cgal
+
+---
+ cmake/Modules/FindCGAL.cmake | 93 --------------------------------------------
+ 1 file changed, 93 deletions(-)
+ delete mode 100644 cmake/Modules/FindCGAL.cmake
+
+diff --git a/cmake/Modules/FindCGAL.cmake b/cmake/Modules/FindCGAL.cmake
+deleted file mode 100644
+index d61765e5..00000000
+--- a/cmake/Modules/FindCGAL.cmake
++++ /dev/null
+@@ -1,93 +0,0 @@
+-find_path(CGAL_INCLUDE_DIRS CGAL/gmp.h
+-    HINTS $ENV{CGAL_DIR}/include ${CGAL_DIR}/include ${CGAL_INCLUDE_DIRS}
+-    PATH_SUFFIXES CGAL
+-)
+-
+-if( MSVC10)
+-	set( CGAL_LIBRARY_POSTFIX "-vc100-mt-${CGAL_VERSION}" )
+-	set( CGAL_LIBRARY_POSTFIX_DEBUG "-vc100-mt-gd-${CGAL_VERSION}" )
+-else()
+-	set( CGAL_LIBRARY_POSTFIX "")
+-	set( CGAL_LIBRARY_POSTFIX_DEBUG "d")
+-endif()
+-
+-#-- incidates if debug version are found
+-set( CGAL_DEBUG_FOUND ON )
+-
+-
+-#-- find CGAL library
+-find_library( CGAL_LIBRARY "CGAL${CGAL_LIBRARY_POSTFIX}" ${CGAL_LIBRARY}
+-	HINTS ${CGAL_LIBRARY_DIRS} $ENV{CGAL_DIR}/lib
+-)
+-if( CGAL_LIBRARY )
+-	get_filename_component(CGAL_LIBRARY_DIRS ${CGAL_LIBRARY} PATH)
+-endif()
+-
+-if(CGAL_FIND_VERSION)
+-    message("CGAL_DIR ${CGAL_DIR}")
+-    find_file(version_file version.h HINTS $ENV{CGAL_DIR}/include ${CGAL_DIR}/include ${CGAL_INCLUDE_DIRS} PATH_SUFFIXES CGAL)
+-    file(STRINGS ${version_file} version_str REGEX "# *define +CGAL_VERSION +")
+-    string( REGEX REPLACE "# *define +CGAL_VERSION +" "" CGAL_VERSION ${version_str})
+-    if("${CGAL_VERSION}" VERSION_LESS "${CGAL_FIND_VERSION}")
+-        message(FATAL_ERROR "CGAL " ${CGAL_FIND_VERSION} " is required (found " ${CGAL_VERSION} " in ${version_file})" )
+-    endif()
+-
+-endif()
+-
+-find_library( CGAL_LIBRARY_DEBUG "CGAL${CGAL_LIBRARY_POSTFIX_DEBUG}" ${CGAL_LIBRARY_DEBUG}
+-	HINTS ${CGAL_LIBRARY_DIRS}
+-)
+-if( NOT CGAL_LIBRARY_DEBUG )
+-	set( CGAL_DEBUG_FOUND OFF )
+-endif()
+-
+-#-- CGAL components (Core, ImageIO)
+-foreach( CGAL_COMPONENT ${CGAL_FIND_COMPONENTS} )
+-	#-- find release
+-	find_library( CGAL_${CGAL_COMPONENT}_LIBRARY "CGAL_${CGAL_COMPONENT}${CGAL_LIBRARY_POSTFIX}" "${CGAL_${CGAL_COMPONENT}_LIBRARY}"
+-		HINTS ${CGAL_LIBRARY_DIRS} $ENV{CGAL_DIR}/lib
+-	)
+-	#-- find debug
+-	find_library( CGAL_${CGAL_COMPONENT}_LIBRARY_DEBUG "CGAL_${CGAL_COMPONENT}${CGAL_LIBRARY_POSTFIX_DEBUG}" "${CGAL_${CGAL_COMPONENT}_LIBRARY_DEBUG}"
+-		HINTS ${CGAL_LIBRARY_DIRS} $ENV{CGAL_DIR}/lib
+-	)
+-	
+-	if( NOT CGAL_${CGAL_COMPONENT}_LIBRARY_DEBUG )
+-		set( CGAL_DEBUG_FOUND OFF )
+-	endif()
+-endforeach()
+- 
+-
+-#-- build variable CGAL_LIBRARIES
+-
+-set( CGAL_LIBRARIES "" )
+-if( ${CGAL_DEBUG_FOUND} )
+-	list( APPEND CGAL_LIBRARIES optimized ${CGAL_LIBRARY} debug ${CGAL_LIBRARY_DEBUG} )
+-	foreach( CGAL_COMPONENT ${CGAL_FIND_COMPONENTS} )
+-		list( APPEND CGAL_LIBRARIES optimized "${CGAL_${CGAL_COMPONENT}_LIBRARY}" debug "${CGAL_${CGAL_COMPONENT}_LIBRARY_DEBUG}" )
+-	endforeach()
+-else()
+-	list( APPEND CGAL_LIBRARIES ${CGAL_LIBRARY} )
+-	foreach( CGAL_COMPONENT ${CGAL_FIND_COMPONENTS} )
+-		list( APPEND CGAL_LIBRARIES ${CGAL_${CGAL_COMPONENT}_LIBRARY} )
+-	endforeach()
+-endif()
+-
+-#-- report/validate
+-set( CGAL_COMPONENT_LIBRARIES "" )
+-set( CGAL_COMPONENT_LIBRARIES_DEBUG "" )
+-foreach( CGAL_COMPONENT ${CGAL_FIND_COMPONENTS} )
+-	list( APPEND CGAL_COMPONENT_LIBRARIES CGAL_${CGAL_COMPONENT}_LIBRARY )
+-	list( APPEND CGAL_COMPONENT_LIBRARIES_DEBUG CGAL_${CGAL_COMPONENT}_LIBRARY_DEBUG )
+-endforeach()
+-
+-include(FindPackageHandleStandardArgs)
+-find_package_handle_standard_args(
+-	CGAL DEFAULT_MSG
+-	CGAL_INCLUDE_DIRS CGAL_LIBRARIES ${CGAL_COMPONENT_LIBRARIES}
+-)
+-
+-mark_as_advanced( CGAL_LIBRARY_DIRS CGAL_LIBRARY_DEBUG ${CGAL_COMPONENT_LIBRARIES_DEBUG} )
+-
+-
+-
+
+From 944475ded1b0a82692bcc6f3582c65d6b5235537 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=A9bastien=20Loriot?= <sebastien.loriot@cgal.org>
+Date: Wed, 28 Mar 2018 14:30:07 +0200
+Subject: [PATCH 6/9] test 4.10.2 and 4.11
+
+---
+ .travis.yml                    | 10 ++++++----
+ travis/linux/before_install.sh | 21 +++++++--------------
+ travis/linux/install_cgal.sh   | 12 +++---------
+ 3 files changed, 16 insertions(+), 27 deletions(-)
+
+diff --git a/.travis.yml b/.travis.yml
+index 9e05e252..4c3b33f6 100644
+--- a/.travis.yml
++++ b/.travis.yml
+@@ -1,4 +1,6 @@
+-language: cpp
++language: cpp 
++dist: trusty 
++sudo: required 
+ 
+ # os:
+ #  - linux
+@@ -9,14 +11,14 @@ compiler:
+   - clang
+ 
+ env:
+-  - CGAL_VERSION=4.3
+-  - CGAL_VERSION=4.7
++  - CGAL_VERSION=4.10.2
++  - CGAL_VERSION=4.11
+ 
+ before_install:
+   - ./travis/${TRAVIS_OS_NAME}/before_install.sh $CGAL_VERSION
+ 
+ before_script:
+-  - cmake -DSFCGAL_BUILD_TESTS=ON
++  - CGAL_DIR=/usr/local/lib/CGAL cmake -DSFCGAL_BUILD_TESTS=ON
+ 
+ script:
+   - make
+diff --git a/travis/linux/before_install.sh b/travis/linux/before_install.sh
+index 26f84caa..21284e9d 100755
+--- a/travis/linux/before_install.sh
++++ b/travis/linux/before_install.sh
+@@ -1,24 +1,17 @@
+ export DEBIAN_FRONTEND=noninteractive
+-sudo add-apt-repository ppa:apokluda/boost1.53 --yes
+-sudo add-apt-repository ppa:kalakris/cmake --yes # CMAKE 2.8.11
++sudo -E apt-add-repository -y "ppa:ppsspp/cmake"
+ sudo apt-get update -qq
+ sudo apt-get install --force-yes \
+-    cmake libboost-chrono1.53-dev libboost-program-options1.53-dev libboost-filesystem1.53-dev libboost-timer1.53-dev \
+-    libboost-test1.53-dev libboost-date-time1.53-dev libboost-thread1.53-dev \
+-    libboost-system1.53-dev libboost-serialization1.53-dev \
++    cmake libboost-chrono1.55-dev libboost-program-options1.55-dev libboost-filesystem1.55-dev libboost-timer1.55-dev \
++    libboost-test1.55-dev libboost-date-time1.55-dev libboost-thread1.55-dev \
++    libboost-system1.55-dev libboost-serialization1.55-dev \
+     libmpfr-dev libgmp-dev \
+     cmake
+ #CGAL
+-if [ "$1" = "4.3" ]; then
+-    wget https://gforge.inria.fr/frs/download.php/file/32994/CGAL-4.3.tar.gz
+-    tar xzf CGAL-4.3.tar.gz
+-    cd CGAL-4.3 && cmake . && make && sudo make install && cd ..
+-elif [ "$1" = "4.7" ]; then
+-    wget https://github.com/CGAL/cgal/releases/download/releases%2FCGAL-4.7/CGAL-4.7.tar.gz
+-    tar xzf CGAL-4.7.tar.gz
+-    cd CGAL-4.7 && cmake . && make && sudo make install && cd ..
+-fi
+ 
++wget https://github.com/CGAL/cgal/archive/releases/CGAL-"$1".tar.gz
++tar xzf CGAL-"$1".tar.gz
++cd cgal-releases-CGAL-"$1" && cmake . && make && sudo make install && cd ..
+ 
+ cmake --version
+ clang --version
+diff --git a/travis/linux/install_cgal.sh b/travis/linux/install_cgal.sh
+index 92922aaa..193b6441 100644
+--- a/travis/linux/install_cgal.sh
++++ b/travis/linux/install_cgal.sh
+@@ -1,14 +1,8 @@
+ #CGAL
+-if [ "$1" = "4.3" ]; then
+-    wget https://gforge.inria.fr/frs/download.php/file/32994/CGAL-4.3.tar.gz
+-    tar xzf CGAL-4.3.tar.gz
+-    cd CGAL-4.3 && cmake -DCMAKE_INSTALL_PREFIX=$HOME/CGAL-4.3 . && make && make install && cd ..
+-elif [ "$1" = "4.7" ]; then
+-    wget https://github.com/CGAL/cgal/releases/download/releases%2FCGAL-4.7/CGAL-4.7.tar.gz
+-    tar xzf CGAL-4.7.tar.gz
+-    cd CGAL-4.7 && cmake -DCMAKE_INSTALL_PREFIX=$HOME/CGAL-4.7 . && make && make install && cd ..
+-fi
+ 
++wget https://github.com/CGAL/cgal/archive/releases/CGAL-"$1".tar.gz
++tar xzf CGAL-"$1".tar.gz
++cd CGAL-"$1" && cmake -DCMAKE_INSTALL_PREFIX=$HOME/CGAL-"$1" . && make && make install && cd ..
+ 
+ cmake --version
+ clang --version
+
+From 174dbb78303e6365bcf72ce920cb0a0c918b589b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=A9bastien=20Loriot?= <sebastien.loriot@cgal.org>
+Date: Fri, 30 Mar 2018 16:25:16 +0200
+Subject: [PATCH 7/9] the polygons of the convex hull are always triangulated
+
+---
+ test/unit/SFCGAL/algorithm/ConvexHullTest.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/unit/SFCGAL/algorithm/ConvexHullTest.cpp b/test/unit/SFCGAL/algorithm/ConvexHullTest.cpp
+index 720e413a..07412814 100644
+--- a/test/unit/SFCGAL/algorithm/ConvexHullTest.cpp
++++ b/test/unit/SFCGAL/algorithm/ConvexHullTest.cpp
+@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE( testConvexHull3D_LineStringCoplanar )
+     LineString lineString( points ) ;
+     std::auto_ptr< Geometry > hull( algorithm::convexHull3D( lineString ) );
+     BOOST_CHECK( hull->is< PolyhedralSurface >() );
+-    BOOST_CHECK_EQUAL( hull->as< PolyhedralSurface >().numPolygons(), 1U );
++    BOOST_CHECK_EQUAL( hull->as< PolyhedralSurface >().numPolygons(), 2U );
+ }
+ 
+ 
+
+From e856f5c173fab432e63b3e32bf3fce2205f90960 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=A9bastien=20Loriot?= <sebastien.loriot@cgal.org>
+Date: Fri, 30 Mar 2018 16:25:38 +0200
+Subject: [PATCH 8/9] test 4.11.1
+
+---
+ .travis.yml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.travis.yml b/.travis.yml
+index 4c3b33f6..61099d26 100644
+--- a/.travis.yml
++++ b/.travis.yml
+@@ -12,7 +12,7 @@ compiler:
+ 
+ env:
+   - CGAL_VERSION=4.10.2
+-  - CGAL_VERSION=4.11
++  - CGAL_VERSION=4.11.1
+ 
+ before_install:
+   - ./travis/${TRAVIS_OS_NAME}/before_install.sh $CGAL_VERSION
+
+From e2d656b448a560508e50a741952fddaced27b139 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?S=C3=A9bastien=20Loriot?= <sebastien.loriot@cgal.org>
+Date: Fri, 30 Mar 2018 17:44:18 +0200
+Subject: [PATCH 9/9] use iformat
+
+---
+ src/detail/tools/InputStreamReader.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/detail/tools/InputStreamReader.h b/src/detail/tools/InputStreamReader.h
+index d0535669..292a8fd0 100644
+--- a/src/detail/tools/InputStreamReader.h
++++ b/src/detail/tools/InputStreamReader.h
+@@ -150,7 +150,7 @@ class BasicInputStreamReader {
+             skipWhiteSpaces();
+         }
+ 
+-        if ( CGAL::Input_rep<T>(value)(_s) ) {
++        if( _s >> CGAL::iformat(value) ) {
+             commit();
+             return true ;
+         }

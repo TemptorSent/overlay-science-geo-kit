@@ -29,6 +29,8 @@ DEPEND="
 
 RDEPEND="${DEPEND}"
 
+PATCHES=( "${FILESDIR}/${P}-fix-cgal-gmpxx-0.patch" "${FILESDIR}/${P}-fix-cgal-gmpxx-1.patch" )
+
 S="${WORKDIR}/${MY_P}"
 
 src_prepare() {
@@ -38,6 +40,7 @@ src_prepare() {
 
 src_configure() {
 	local mycmakeargs=(
+		-DCGAL_CONFIG="${EROOT}usr/$(get_libdir)/cmake/CGALConfig.cmake"
 		-DSFCGAL_WITH_OSG=$(usex osg)
 	)
 	cmake-utils_src_configure

@@ -1,0 +1,58 @@
+From 5c495ce98c404f891eb0e2c92c2d73b94af3ef23 Mon Sep 17 00:00:00 2001
+From: pierre-eric <pierre-eric.pelloux-prayer@oslandia.com>
+Date: Mon, 13 Nov 2017 15:47:25 +0100
+Subject: [PATCH] Fix build when CGAL is compiled with GMPXX
+
+See issue #145
+---
+ src/Coordinate.cpp |  7 +++++++
+ src/numeric.h      | 14 ++++++++++++++
+ 2 files changed, 21 insertions(+)
+
+diff --git a/src/Coordinate.cpp b/src/Coordinate.cpp
+index 773f5c43..014e9dfb 100644
+--- a/src/Coordinate.cpp
++++ b/src/Coordinate.cpp
+@@ -266,10 +266,17 @@ class RoundVisitor : public boost::static_visitor<> {
+ 
+ 
+     Kernel::FT _roundFT( const Kernel::FT& v ) const {
++        #ifdef CGAL_USE_GMPXX
++        return Kernel::FT( ::mpq_class(
++                               SFCGAL::round( v.exact() * _scaleFactor ),
++                               _scaleFactor
++                           ) ) ;
++        #else
+         return Kernel::FT( CGAL::Gmpq(
+                                SFCGAL::round( v.exact() * _scaleFactor ),
+                                _scaleFactor
+                            ) ) ;
++        #endif
+     }
+ 
+ };
+diff --git a/src/numeric.h b/src/numeric.h
+index 0b6f5ed0..6c18818b 100644
+--- a/src/numeric.h
++++ b/src/numeric.h
+@@ -57,6 +57,20 @@ inline double round( const double& v )
+     }
+ }
+ 
++#ifdef CGAL_USE_GMPXX
++/**
++ * @brief floor a rational to an integer
++ */
++SFCGAL_API ::mpz_class floor( const ::mpq_class& v ) ;
++/**
++ * @brief ceil a rational to an integer
++ */
++SFCGAL_API ::mpz_class ceil( const ::mpq_class& v ) ;
++/**
++ * @brief round a rational to an integer
++ */
++SFCGAL_API ::mpz_class round( const ::mpq_class& v ) ;
++#endif
+ 
+ /**
+  * @brief floor a rational to an integer
