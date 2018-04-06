@@ -40,7 +40,6 @@ src_prepare() {
 
 src_configure() {
 	local mycmakeargs=(
-		-DCGAL_CONFIG="${EROOT}usr/$(get_libdir)/cmake/CGALConfig.cmake"
 		-DSFCGAL_WITH_OSG=$(usex osg)
 	)
 	cmake-utils_src_configure
