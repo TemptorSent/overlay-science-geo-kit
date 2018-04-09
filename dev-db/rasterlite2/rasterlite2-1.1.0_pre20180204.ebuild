@@ -24,8 +24,10 @@ fi
 LICENSE="MPL-1.1 GPL-2.0+ LGPL-2.1+ GPL-3+"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~x86"
-IUSE="openjpeg webp lzma charls"
+IUSE="webp lzma charls"
 
+# Note: Fails to build tools with openjpeg disabled;
+# setting it as hard dep until upstream is fixed.
 RDEPEND="
 	>=dev-db/sqlite-3.7.5:3[extensions(+)]
 	>=dev-db/spatialite-4.3.0
@@ -34,8 +36,8 @@ RDEPEND="
 	media-libs/libpng
 	media-libs/tiff
 	sci-libs/libgeotiff
+	media-libs/openjpeg
 	charls? ( media-libs/charls:1 )
-	openjpeg? ( media-libs/openjpeg )
 	webp? ( media-libs/libwebp )
 	lzma? ( app-arch/xz-utils )
 	x11-libs/cairo
@@ -60,7 +62,7 @@ src_prepare() {
 src_configure() {
 	LIBSPATIALITE_LIBS="-lspatialite -lpthread -lsqlite3" econf \
 	--disable-static \
-	$(use_enable openjpeg) \
+	--enable-openjpeg \
 	$(use_enable webp) \
 	$(use_enable lzma) \
 	$(use_enable charls)
