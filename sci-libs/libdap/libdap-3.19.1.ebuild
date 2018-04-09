@@ -40,6 +40,15 @@ src_prepare() {
 		-e 's/$(CURL_CFLAGS)/& $(TIRPC_CFLAGS)/' \
 		-e 's/$(AM_CPPFLAGS)/& $(TIRPC_CFLAGS)/' \
 		-i Makefile.am */Makefile.am */*/Makefile.am
+
+	# Fix dap-config.in to include tirpc cflags as needed.
+	sed -e 's|@CURL_CFLAGS@|& @TIRPC_CFLAGS@|' -i dap-config.in
+
+	# Fix .pc.in files to include tirpc cflags and libs as needed.
+	sed -e 's|^Cflags:|& @TIRPC_CFLAGS@|' \
+		-e 's|^Libs:|& @TIRPC_LIBS@|' \
+		-i *.pc.in
+
 	default
 	eautoreconf
 }
