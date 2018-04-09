@@ -25,7 +25,7 @@ DEPEND="
 	>=sci-libs/proj-4.9.0
 	>=dev-libs/jsoncpp-1.6.2
 	<=dev-libs/jsoncpp-1.8.1
-	>=sci-geosciences/laszip-3.1.1:3
+	>=sci-geosciences/laszip-3.2.2:8
 	curl? ( net-misc/curl )
 	xml2? ( >=dev-libs/libxml2-2.7.0 )
 	oracle? ( >=dev-db/oracle-instant-client-12 ) 
@@ -44,7 +44,7 @@ src_configure() {
 	local mycmakeargs=(
 		-DBUILD_SHARED_LIBS=1
 		-DLASZIP_INCLUDE_DIR="${EPREFIX}/usr/include/laszip-3"
-		-DLASZIP_LIBRARY="${EPREFIX}/usr/$(get_libdir)/liblaszip.so.3"
+		-DLASZIP_LIBRARY="${EPREFIX}/usr/$(get_libdir)/liblaszip.so.8"
 	)
 	cmake-utils_src_configure
 }
