@@ -60,6 +60,7 @@ src_configure() {
 
 	mycmakeargs=(
 		-DHDF4_INSTALL_LIB_DIR="$(get_libdir)"
+		-DHDF4_INSTALL_INCLUDE_DIR="include/hdf"
 		-DBUILD_SHARED_LIBS=TRUE
 		-DHDF4_ENABLE_NETCDF=FALSE
 		-DHDF4_BUILD_EXAMPLES=$(usex examples)
