@@ -3,20 +3,19 @@
 
 EAPI=6
 
-inherit autotools flag-o-matic
+inherit autotools flag-o-matic toolchain-funcs
 
-DESCRIPTION="Implementation of a C++ SDK for DAP 2.0 and 3.2"
+DESCRIPTION="Implementation of libdap C++ SDK with DAP2 and DAP4 support"
 HOMEPAGE="http://opendap.org/"
 SRC_URI="http://www.opendap.org/pub/source/${P}.tar.gz"
 
 LICENSE="|| ( LGPL-2.1 URI )"
 SLOT="0"
 KEYWORDS="amd64 ~ppc ~ppc64 x86 ~amd64-linux ~x86-linux"
-IUSE="static-libs test +libtirpc"
+IUSE="static-libs test +tests-net"
 
 RDEPEND="
-	!libtirpc? ( elibc_glibc? ( sys-libs/glibc[rpc(-)] ) )
-	libtirpc? ( net-libs/libtirpc )
+	net-libs/libtirpc
 	net-libs/rpcsvc-proto
 	>=dev-libs/libxml2-2.7.0:2
 	>=net-misc/curl-7.19.0
@@ -27,34 +26,59 @@ DEPEND="${RDEPEND}
 	test? ( dev-util/cppunit )"
 
 PATCHES=(
-	"${FILESDIR}/${PN}-3.18.1-fix-buildsystem.patch"
 	"${FILESDIR}/${PN}-3.18.1-fix-c++14.patch"
-	"${FILESDIR}/${PN}-3.18.1-disable-cache-test.patch"
-	"${FILESDIR}/${PN}-3.18.1-disable-dmr-tests.patch"
-	"${FILESDIR}/${PN}-3.18.1-disable-net-tests.patch"
-	#"${FILESDIR}/${PN}-3.18.1-disable-broken-tests.patch"
+	"${FILESDIR}/${PN}-3.19.1-use-libtirpc.patch"
 )
 
 src_prepare() {
+
 	default
-	# TODO - Clean up CFLAGS and LIBS handling
-	if use libtirpc ; then
+	# Fixup tests for easier sedding
+	sed -re '/check_SCRIPTS/ {
+				N
+				s/(check_SCRIPTS.*)\\\n\t(.*)/\1\2/
+			}' \
+		-i tests/Makefile.am || die
 
-		eapply "${FILESDIR}/${PN}-3.19.1-use-libtirpc.patch"
-		# Fix CFLAGS to use libtirpc if defined -- this is the brute-force method.
-		sed -e 's/$(XML2_CFLAGS)/& $(TIRPC_CFLAGS)/' \
-			-e 's/$(CURL_CFLAGS)/& $(TIRPC_CFLAGS)/' \
-			-e 's/$(AM_CPPFLAGS)/& $(TIRPC_CFLAGS)/' \
-			-i Makefile.am */Makefile.am */*/Makefile.am
+	# Don't install test libs and headers in system
+	sed -e 's/^lib_LIBRARIES = /noinst_LIBRARIES = /' \
+		-e 's/^testheaders_HEADERS = /noinst_testheaders = /' \
+		-i tests/Makefile.am || die
 
-		# Fix dap-config.in to include tirpc cflags as needed.
-		sed -e 's|@CURL_CFLAGS@|& @TIRPC_CFLAGS@|' -i dap-config.in
+	# Remove network tests unless requested
+	if ! use tests-net ; then
+		sed -e '/UNIT_TESTS = /,/UNIT_TESTS += / {
+					s/HTTPConnectTest// ;
+					s/RCReaderTest// ;
+					s/HTTPCacheTest//
+				}' \
+			-i unit-tests/Makefile.am || die
 
-		# Fix .pc.in files to include tirpc cflags and libs as needed.
-		sed -e 's|^Cflags:|& @TIRPC_CFLAGS@|' \
-			-e 's|^Libs:|& @TIRPC_LIBS@|' \
-			-i *.pc.in
+		sed -e '/^.*$(SHELL).*$(GETDAPTESTSUITE).*/d' \
+			-e 's/$(GETDAPTESTSUITE)//g' \
+			-i tests/Makefile.am || die
 	fi
+
+	# Disable tests which break on big-endian machines if we're not little-endian.
+	if [ "$(tc-endian)" != "little" ] ; then 
+		sed -e '/^\t$(SHELL)'"'"'$(DMRTESTSUITE)/d' \
+			-e 's/$(DMRTESTSUITE)//g' \
+			-i tests/Makefile.am || die
+	fi
+
+	# Fix CFLAGS to use libtirpc using the brute-force method.
+	sed -e 's/$(XML2_CFLAGS)/& $(TIRPC_CFLAGS)/' \
+		-e 's/$(CURL_CFLAGS)/& $(TIRPC_CFLAGS)/' \
+		-e 's/$(AM_CPPFLAGS)/& $(TIRPC_CFLAGS)/' \
+		-i Makefile.am */Makefile.am */*/Makefile.am || die
+
+	# Fix dap-config.in to include tirpc cflags as needed.
+	sed -e 's|@CURL_CFLAGS@|& @TIRPC_CFLAGS@|' -i dap-config.in || die
+
+	# Fix .pc.in files to include tirpc cflags and libs as needed.
+	sed -e 's|^Cflags:.*|& @TIRPC_CFLAGS@|' \
+		-e 's|^Libs:.*|& @TIRPC_LIBS@|' \
+		-i *.pc.in || die
 
 	eautoreconf
 }
