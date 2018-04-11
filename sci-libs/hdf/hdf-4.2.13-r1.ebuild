@@ -16,7 +16,9 @@ SRC_URI="http://www.hdfgroup.org/ftp/HDF/HDF_Current/src/${MYP}.tar.bz2"
 SLOT="0"
 LICENSE="NCSA-HDF"
 KEYWORDS="~amd64 ~ia64 ~ppc ~x86 ~amd64-linux ~x86-linux"
-IUSE="examples fortran +szip static-libs +libtirpc test"
+IUSE="+fortran +szip +libtirpc test"
+# IUSE examples static-libs
+
 REQUIRED_USE="test? ( szip )"
 
 RDEPEND="
@@ -90,34 +92,38 @@ set_directory_properties( PROPERTIES\
 #		-e '$ a\
 #install( TARGETS ${examples} RUNTIME DESTINATION "bin/HDF4Examples" OPTIONAL)'\
 
-
+	# Try to fix up removal of static-libs
+#	use static-libs || sed -e 's/H4_ENABLE_STATIC_LIB YES/H4_ENABLE_STATIC_LIB NO/' -i CMakeLists.txt
 }
 
 src_configure() {
 	CC="$(tc-getCC)"
 
 	mycmakeargs=(
+		-DBUILD_SHARED_LIBS=TRUE
 		-DHDF4_INSTALL_LIB_DIR="$(get_libdir)"
 		-DHDF4_INSTALL_INCLUDE_DIR="include/hdf"
-		-DBUILD_SHARED_LIBS=TRUE
 		-DHDF4_ENABLE_NETCDF=FALSE
-		-DHDF4_BUILD_EXAMPLES=$(usex examples)
 		-DHDF4_BUILD_FORTRAN=$(usex fortran)
 		-DHDF4_BUILD_TOOLS=TRUE
 		-DHDF4_BUILD_UTILS=TRUE
 		-DHDF4_ENABLE_SZIP_SUPPORT=$(usex szip)
 	)
+	#-DHDF4_BUILD_EXAMPLES=$(usex examples)
 
 	cmake-utils_src_configure
 }
 
 src_install() {
 	cmake-utils_src_install
+	sed -e '/component(static)/,/endif/ s/static/shared/g' -i "${ED}usr/share/cmake/hdf4/hdf4-config.cmake"
 
-	if ! use static-libs ; then
-		rm "${ED}usr"/lib*/*.a
-		prune_libtool_files --all
-	fi
+#	if ! use static-libs ; then
+#		rm "${ED}usr"/lib*/*.a
+#		prune_libtool_files --all
+#		sed -e '/shared$/ d ; s/[[:alpha]]-static//g ; /component(static)/,/endif/ s/static/shared/g'\
+#			-i "${ED}usr/share/cmake/hdf4/hdf4-config.cmake"
+#	fi
 
 	# Install man pages, renaming ncdump and ncgen with suffix -hdf
 	doman ${S}/man/*.1
