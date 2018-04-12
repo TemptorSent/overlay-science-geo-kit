@@ -1,5 +1,5 @@
 diff --git a/CMakeFilters.cmake b/CMakeFilters.cmake
-index fac64a6b..ffc455c6 100644
+index fac64a6..ffc455c 100644
 --- a/CMakeFilters.cmake
 +++ b/CMakeFilters.cmake
 @@ -18,14 +18,10 @@ if (HDF4_ALLOW_EXTERNAL_SUPPORT MATCHES "GIT" OR HDF4_ALLOW_EXTERNAL_SUPPORT MAT
@@ -115,7 +115,7 @@ index fac64a6b..ffc455c6 100644
    message (STATUS "Filter SZIP is ON")
    if (HDF4_ENABLE_SZIP_ENCODING)
 diff --git a/CMakeInstallation.cmake b/CMakeInstallation.cmake
-index 37f54e45..9d19d74c 100644
+index 37f54e4..e6f9467 100644
 --- a/CMakeInstallation.cmake
 +++ b/CMakeInstallation.cmake
 @@ -8,7 +8,7 @@ if (WIN32)
@@ -179,8 +179,64 @@ index 37f54e45..9d19d74c 100644
        COMPONENT configinstall
    )
  endif ()
+@@ -143,7 +143,7 @@ if (HDF4_PACK_EXAMPLES)
+   install (
+       FILES ${HDF4_BINARY_DIR}/HDF4_Examples.cmake
+       DESTINATION ${HDF4_INSTALL_DATA_DIR}
+-      COMPONENT hdfdocuments
++      COMPONENT hdfexamples
+   )
+   if (EXISTS "${HDF4_EXAMPLES_COMPRESSED_DIR}/${HDF4_EXAMPLES_COMPRESSED}")
+     execute_process(
+@@ -153,26 +153,26 @@ if (HDF4_PACK_EXAMPLES)
+       DIRECTORY ${HDF4_BINARY_DIR}/HDF4Examples
+       DESTINATION ${HDF4_INSTALL_DATA_DIR}
+       USE_SOURCE_PERMISSIONS
+-      COMPONENT hdfdocuments
++      COMPONENT hdfexamples
+     )
+   endif ()
+   install (
+       FILES
+           ${HDF4_SOURCE_DIR}/release_notes/USING_CMake_Examples.txt
+       DESTINATION ${HDF4_INSTALL_DATA_DIR}
+-      COMPONENT hdfdocuments
++      COMPONENT hdfexamples
+   )
+   install (
+       FILES
+           ${HDF_RESOURCES_DIR}/CTestScript.cmake
+       DESTINATION ${HDF4_INSTALL_DATA_DIR}
+-      COMPONENT hdfdocuments
++      COMPONENT hdfexamples
+   )
+   install (
+       FILES
+           ${HDF_RESOURCES_DIR}/HDF4_Examples_options.cmake
+       DESTINATION ${HDF4_INSTALL_DATA_DIR}
+-      COMPONENT hdfdocuments
++      COMPONENT hdfexamples
+   )
+ endif ()
+ 
+@@ -522,6 +522,15 @@ The HDF data model, file format, API, library, and tools are open and distribute
+       INSTALL_TYPES Full Developer User
+   )
+ 
++  if (HDF4_BUILD_EXAMPLES)
++    cpack_add_component (hdfexamples
++        DISPLAY_NAME "HDF4 Examples"
++        DEPENDS libraries
++        GROUP Documents
++        INSTALL_TYPES Full Developer
++    )
++  endif()
++
+   if (HDF4_BUILD_FORTRAN)
+     cpack_add_component (fortlibraries
+         DISPLAY_NAME "HDF4 Fortran Libraries"
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 39960364..5ce8257d 100644
+index 3996036..5ce8257 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -200,6 +200,8 @@ set (HDF4_JAVA_LOGGING_JAR         ${HDF4_SOURCE_DIR}/java/lib/slf4j-api-1.7.5.j
@@ -421,7 +477,7 @@ index 39960364..5ce8257d 100644
  endif ()
  
 diff --git a/MANIFEST b/MANIFEST
-index a280ed11..6dd58744 100644
+index a280ed1..6dd5874 100644
 --- a/MANIFEST
 +++ b/MANIFEST
 @@ -1167,10 +1167,8 @@
@@ -436,7 +492,7 @@ index a280ed11..6dd58744 100644
  ./config/cmake_ext_mod/GetTimeOfDayTest.cpp
  ./config/cmake_ext_mod/grepTest.cmake
 diff --git a/README.txt b/README.txt
-index a8943c5c..e0046971 100644
+index a8943c5..e004697 100644
 --- a/README.txt
 +++ b/README.txt
 @@ -1,4 +1,4 @@
@@ -446,7 +502,7 @@ index a8943c5c..e0046971 100644
  
  Information about HDF
 diff --git a/UserMacros.cmake b/UserMacros.cmake
-index 45937533..01e76eda 100644
+index 4593753..01e76ed 100644
 --- a/UserMacros.cmake
 +++ b/UserMacros.cmake
 @@ -7,9 +7,9 @@
@@ -462,7 +518,7 @@ index 45937533..01e76eda 100644
  #-------------------------------------------------------------------------------
  option (BUILD_USER_DEFINED_LIBS "Build With User Defined Values" OFF)
 diff --git a/bin/h4vers b/bin/h4vers
-index 56d2fe10..73ec9624 100755
+index 56d2fe1..73ec962 100755
 --- a/bin/h4vers
 +++ b/bin/h4vers
 @@ -64,11 +64,11 @@ use strict;
@@ -628,7 +684,7 @@ index 56d2fe10..73ec9624 100755
  
  exit 0;
 diff --git a/bin/release b/bin/release
-index bab3f289..561f51e3 100755
+index bab3f28..561f51e 100755
 --- a/bin/release
 +++ b/bin/release
 @@ -44,26 +44,26 @@ USAGE()
@@ -878,7 +934,7 @@ index bab3f289..561f51e3 100755
  done
  
 diff --git a/config/cmake/CTestScript.cmake b/config/cmake/CTestScript.cmake
-index e5d8042c..f140e6c8 100755
+index e5d8042..f140e6c 100755
 --- a/config/cmake/CTestScript.cmake
 +++ b/config/cmake/CTestScript.cmake
 @@ -56,7 +56,7 @@ if (APPLE)
@@ -891,7 +947,7 @@ index e5d8042c..f140e6c8 100755
  
    set (BUILD_OPTIONS "${BUILD_OPTIONS} -DCTEST_USE_LAUNCHERS:BOOL=ON -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=OFF")
 diff --git a/config/cmake/HDF4_Examples.cmake.in b/config/cmake/HDF4_Examples.cmake.in
-index fbae0f01..779b11a0 100644
+index fbae0f0..779b11a 100644
 --- a/config/cmake/HDF4_Examples.cmake.in
 +++ b/config/cmake/HDF4_Examples.cmake.in
 @@ -79,7 +79,7 @@ endif()
@@ -904,7 +960,7 @@ index fbae0f01..779b11a0 100644
  ###############################################################################################################
  # For any comments please contact cdashhelp@hdfgroup.org
 diff --git a/config/cmake/UseJava.cmake b/config/cmake/UseJava.cmake
-index 9b3bf023..c70f52ee 100644
+index 9b3bf02..c70f52e 100644
 --- a/config/cmake/UseJava.cmake
 +++ b/config/cmake/UseJava.cmake
 @@ -285,7 +285,7 @@
@@ -944,7 +1000,7 @@ index 9b3bf023..c70f52ee 100644
              string(LENGTH ${_JAVA_REL_BINARY_PATH} _BIN_LEN)
              string(LENGTH ${_JAVA_REL_SOURCE_PATH} _SRC_LEN)
 diff --git a/config/cmake/cacheinit.cmake b/config/cmake/cacheinit.cmake
-index 6db131b5..5c6d3edf 100644
+index 6db131b..5c6d3ed 100644
 --- a/config/cmake/cacheinit.cmake
 +++ b/config/cmake/cacheinit.cmake
 @@ -26,10 +26,6 @@ set (HDF4_ENABLE_NETCDF ON CACHE BOOL "Build HDF4 versions of NetCDF-3 APIS" FOR
@@ -959,7 +1015,7 @@ index 6db131b5..5c6d3edf 100644
  
  set (HDF4_ENABLE_Z_LIB_SUPPORT ON CACHE BOOL "Enable Zlib Filters" FORCE)
 diff --git a/config/cmake/hdf4-config.cmake.in b/config/cmake/hdf4-config.cmake.in
-index 51df8775..e214abba 100644
+index 51df877..e214abb 100644
 --- a/config/cmake/hdf4-config.cmake.in
 +++ b/config/cmake/hdf4-config.cmake.in
 @@ -16,7 +16,6 @@ set (${HDF4_PACKAGE_NAME}_VALID_COMPONENTS
@@ -1004,7 +1060,7 @@ index 51df8775..e214abba 100644
  
  # Handle default component(static) :
 diff --git a/config/cmake/jrunTest.cmake b/config/cmake/jrunTest.cmake
-index 6013db44..c0984f67 100644
+index 6013db4..c0984f6 100644
 --- a/config/cmake/jrunTest.cmake
 +++ b/config/cmake/jrunTest.cmake
 @@ -109,7 +109,7 @@ if (TEST_MASK_ERROR)
@@ -1114,7 +1170,7 @@ index 6013db44..c0984f67 100644
      endif ()
    endif ()
 diff --git a/config/cmake/mccacheinit.cmake b/config/cmake/mccacheinit.cmake
-index 5d9028c9..3a29e1f9 100644
+index 5d9028c..3a29e1f 100644
 --- a/config/cmake/mccacheinit.cmake
 +++ b/config/cmake/mccacheinit.cmake
 @@ -24,10 +24,6 @@ set (HDF4_ENABLE_NETCDF ON CACHE BOOL "Build HDF4 versions of NetCDF-3 APIS" FOR
@@ -1129,7 +1185,7 @@ index 5d9028c9..3a29e1f9 100644
  
  set (HDF4_ENABLE_Z_LIB_SUPPORT ON CACHE BOOL "Enable Zlib Filters" FORCE)
 diff --git a/config/cmake/scripts/CTestScript.cmake b/config/cmake/scripts/CTestScript.cmake
-index d376e59a..2594df59 100755
+index d376e59..2594df5 100755
 --- a/config/cmake/scripts/CTestScript.cmake
 +++ b/config/cmake/scripts/CTestScript.cmake
 @@ -57,7 +57,7 @@ if (APPLE)
@@ -1142,7 +1198,7 @@ index d376e59a..2594df59 100755
  
    set (BUILD_OPTIONS "${BUILD_OPTIONS} -DCTEST_USE_LAUNCHERS:BOOL=ON -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=OFF")
 diff --git a/config/cmake/scripts/HDF4config.cmake b/config/cmake/scripts/HDF4config.cmake
-index 17e57e6b..2acca41e 100755
+index 17e57e6..2acca41 100755
 --- a/config/cmake/scripts/HDF4config.cmake
 +++ b/config/cmake/scripts/HDF4config.cmake
 @@ -1,7 +1,7 @@
@@ -1258,7 +1314,7 @@ index 17e57e6b..2acca41e 100755
    set (CTEST_SITE "WIN7${BUILD_GENERATOR}.XXXX")
 diff --git a/config/cmake_ext_mod/CheckTypeSize.cmake b/config/cmake_ext_mod/CheckTypeSize.cmake
 deleted file mode 100644
-index d217ac55..00000000
+index d217ac5..0000000
 --- a/config/cmake_ext_mod/CheckTypeSize.cmake
 +++ /dev/null
 @@ -1,50 +0,0 @@
@@ -1313,7 +1369,7 @@ index d217ac55..00000000
 -  set (CMAKE_ALLOW_UNKNOWN_VARIABLE_READ_ACCESS)
 -endmacro ()
 diff --git a/config/cmake_ext_mod/ConfigureChecks.cmake b/config/cmake_ext_mod/ConfigureChecks.cmake
-index 5d2bef87..87f3d8fc 100644
+index 5d2bef8..87f3d8f 100644
 --- a/config/cmake_ext_mod/ConfigureChecks.cmake
 +++ b/config/cmake_ext_mod/ConfigureChecks.cmake
 @@ -1,18 +1,18 @@
@@ -1365,7 +1421,7 @@ index 5d2bef87..87f3d8fc 100644
      set (OTHER_TEST_ADD_LIBRARIES)
      if (CMAKE_REQUIRED_LIBRARIES)
 diff --git a/config/cmake_ext_mod/HDFLibMacros.cmake b/config/cmake_ext_mod/HDFLibMacros.cmake
-index 9d50f506..a0fee0c3 100644
+index 9d50f50..a0fee0c 100644
 --- a/config/cmake_ext_mod/HDFLibMacros.cmake
 +++ b/config/cmake_ext_mod/HDFLibMacros.cmake
 @@ -63,14 +63,14 @@ macro (EXTERNAL_JPEG_LIBRARY compress_type jpeg_pic)
@@ -1412,7 +1468,7 @@ index 9d50f506..a0fee0c3 100644
      # Create imported target zlib-shared
      add_library(zlib-shared SHARED IMPORTED)
 diff --git a/config/cmake_ext_mod/HDFMacros.cmake b/config/cmake_ext_mod/HDFMacros.cmake
-index 42eb1a46..5958a358 100644
+index 42eb1a4..5958a35 100644
 --- a/config/cmake_ext_mod/HDFMacros.cmake
 +++ b/config/cmake_ext_mod/HDFMacros.cmake
 @@ -1,3 +1,25 @@
@@ -1526,7 +1582,7 @@ index 42eb1a46..5958a358 100644
        )
      else ()
 diff --git a/config/cmake_ext_mod/HDFTests.c b/config/cmake_ext_mod/HDFTests.c
-index 6b717f3b..3328c0f1 100644
+index 6b717f3..3328c0f 100644
 --- a/config/cmake_ext_mod/HDFTests.c
 +++ b/config/cmake_ext_mod/HDFTests.c
 @@ -20,12 +20,26 @@ int main() { return 0; }
@@ -1557,7 +1613,7 @@ index 6b717f3b..3328c0f1 100644
      {
      char formatString[64];
 diff --git a/config/cmake_ext_mod/HDFUseFortran.cmake b/config/cmake_ext_mod/HDFUseFortran.cmake
-index bf254a14..5f301c1a 100644
+index bf254a1..5f301c1 100644
 --- a/config/cmake_ext_mod/HDFUseFortran.cmake
 +++ b/config/cmake_ext_mod/HDFUseFortran.cmake
 @@ -4,6 +4,14 @@
@@ -1576,7 +1632,7 @@ index bf254a14..5f301c1a 100644
  # Detect name mangling convention used between Fortran and C
  #-----------------------------------------------------------------------------
 diff --git a/config/cmake_ext_mod/grepTest.cmake b/config/cmake_ext_mod/grepTest.cmake
-index 31c8421d..8f0a38ca 100644
+index 31c8421..8f0a38c 100644
 --- a/config/cmake_ext_mod/grepTest.cmake
 +++ b/config/cmake_ext_mod/grepTest.cmake
 @@ -46,15 +46,15 @@ file (READ ${TEST_FOLDER}/${TEST_OUTPUT} TEST_STREAM)
@@ -1599,7 +1655,7 @@ index 31c8421d..8f0a38ca 100644
    endif ()
  endif ()
 diff --git a/config/cmake_ext_mod/runTest.cmake b/config/cmake_ext_mod/runTest.cmake
-index 9a2236e6..c626dfe3 100644
+index 9a2236e..c626dfe 100644
 --- a/config/cmake_ext_mod/runTest.cmake
 +++ b/config/cmake_ext_mod/runTest.cmake
 @@ -76,7 +76,7 @@ if (TEST_REGEX)
@@ -1708,7 +1764,7 @@ index 9a2236e6..c626dfe3 100644
      endif ()
    endif ()
 diff --git a/configure b/configure
-index a666d146..1dc0b2e7 100755
+index a666d14..1dc0b2e 100755
 --- a/configure
 +++ b/configure
 @@ -1,7 +1,7 @@
@@ -1804,7 +1860,7 @@ index a666d146..1dc0b2e7 100755
    with options \\"\$ac_cs_config\\"
  
 diff --git a/configure.ac b/configure.ac
-index 3030bad3..e1ffaeb9 100644
+index 3030bad..e1ffaeb 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -25,7 +25,7 @@ AC_REVISION($Id$)
@@ -1817,7 +1873,7 @@ index 3030bad3..e1ffaeb9 100644
  AC_CONFIG_AUX_DIR([bin])
  AC_CONFIG_HEADER([hdf/src/h4config.h])
 diff --git a/hdf/CMakeLists.txt b/hdf/CMakeLists.txt
-index 8f79a85f..6cb2db20 100644
+index 8f79a85..6cb2db2 100644
 --- a/hdf/CMakeLists.txt
 +++ b/hdf/CMakeLists.txt
 @@ -7,6 +7,6 @@ PROJECT (HDF4_HDF)
@@ -1829,7 +1885,7 @@ index 8f79a85f..6cb2db20 100644
    endif ()
  endif ()
 diff --git a/hdf/examples/CMakeLists.txt b/hdf/examples/CMakeLists.txt
-index 4803c2af..9c4620a9 100644
+index 4803c2a..9c4620a 100644
 --- a/hdf/examples/CMakeLists.txt
 +++ b/hdf/examples/CMakeLists.txt
 @@ -37,15 +37,13 @@ set (examples
@@ -1851,7 +1907,7 @@ index 4803c2af..9c4620a9 100644
  if (BUILD_TESTING)
    include (CMakeTests.cmake)
 diff --git a/hdf/fortran/CMakeLists.txt b/hdf/fortran/CMakeLists.txt
-index 2946e6c6..89586188 100644
+index 2946e6c..8958618 100644
 --- a/hdf/fortran/CMakeLists.txt
 +++ b/hdf/fortran/CMakeLists.txt
 @@ -38,7 +38,7 @@ set (FORTRAN_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -1891,7 +1947,7 @@ index 2946e6c6..89586188 100644
    H4_SET_LIB_OPTIONS (${HDF4_SRC_FORTRAN_LIBSH_TARGET} ${HDF4_SRC_FORTRAN_LIB_NAME} SHARED)
    set_target_properties (${HDF4_SRC_FORTRAN_LIBSH_TARGET} PROPERTIES
 diff --git a/hdf/fortran/CMakeTests.cmake b/hdf/fortran/CMakeTests.cmake
-index 7d639ba7..0a941d62 100644
+index 7d639ba..0a941d6 100644
 --- a/hdf/fortran/CMakeTests.cmake
 +++ b/hdf/fortran/CMakeTests.cmake
 @@ -16,17 +16,13 @@
@@ -1943,7 +1999,7 @@ index 7d639ba7..0a941d62 100644
  ##############################################################################
  ##############################################################################
 diff --git a/hdf/fortran/examples/CMakeLists.txt b/hdf/fortran/examples/CMakeLists.txt
-index 6265afb1..4294bab5 100644
+index 6265afb..4294bab 100644
 --- a/hdf/fortran/examples/CMakeLists.txt
 +++ b/hdf/fortran/examples/CMakeLists.txt
 @@ -67,36 +67,33 @@ set (skip_examples
@@ -1987,7 +2043,7 @@ index 6265afb1..4294bab5 100644
  
  if (BUILD_TESTING)
 diff --git a/hdf/src/CMakeLists.txt b/hdf/src/CMakeLists.txt
-index c6573a59..c4e5c2c1 100644
+index c6573a5..c4e5c2c 100644
 --- a/hdf/src/CMakeLists.txt
 +++ b/hdf/src/CMakeLists.txt
 @@ -122,7 +122,7 @@ set (HDF4_HDF_SRC_CHDRS
@@ -2041,7 +2097,7 @@ index c6573a59..c4e5c2c1 100644
 -
 +endif ()
 diff --git a/hdf/src/hfile.h b/hdf/src/hfile.h
-index c8e56077..a6695f6c 100644
+index c8e5607..a6695f6 100644
 --- a/hdf/src/hfile.h
 +++ b/hdf/src/hfile.h
 @@ -52,9 +52,9 @@
@@ -2057,7 +2113,7 @@ index c8e56077..a6695f6c 100644
  #define LIBVER_LEN  92      /* 4+4+4+80 = 92 */
  /* end of version tags */
 diff --git a/hdf/test/CMakeLists.txt b/hdf/test/CMakeLists.txt
-index 04c99cf6..b32f3375 100644
+index 04c99cf..b32f337 100644
 --- a/hdf/test/CMakeLists.txt
 +++ b/hdf/test/CMakeLists.txt
 @@ -59,30 +59,26 @@ endif ()
@@ -2096,7 +2152,7 @@ index 04c99cf6..b32f3375 100644
    endif ()
  endif ()
 diff --git a/hdf/test/CMakeTests.cmake b/hdf/test/CMakeTests.cmake
-index 2f5d9ec1..60fa4916 100644
+index 2f5d9ec..60fa491 100644
 --- a/hdf/test/CMakeTests.cmake
 +++ b/hdf/test/CMakeTests.cmake
 @@ -29,23 +29,13 @@ set (HDF4_REFERENCE_TEST_FILES
@@ -2127,7 +2183,7 @@ index 2f5d9ec1..60fa4916 100644
  # Remove any output file left over from previous test run
  set (HDF4_TESTHDF_FILES
 diff --git a/hdf/util/CMakeLists.txt b/hdf/util/CMakeLists.txt
-index a429a137..5f54a8de 100644
+index a429a13..5f54a8d 100644
 --- a/hdf/util/CMakeLists.txt
 +++ b/hdf/util/CMakeLists.txt
 @@ -10,9 +10,8 @@ endif ()
@@ -2273,7 +2329,7 @@ index a429a137..5f54a8de 100644
  
  if (BUILD_TESTING AND HDF4_BUILD_UTILS)
 diff --git a/hdf/util/CMakeTests.cmake b/hdf/util/CMakeTests.cmake
-index bf348985..4e72868b 100644
+index bf34898..4e72868 100644
 --- a/hdf/util/CMakeTests.cmake
 +++ b/hdf/util/CMakeTests.cmake
 @@ -26,47 +26,24 @@ if (HDF4_BUILD_TOOLS)
@@ -2496,7 +2552,7 @@ index bf348985..4e72868b 100644
  ##############################################################################
  ###           T H E   T E S T S  M A C R O S                               ###
 diff --git a/java/CMakeLists.txt b/java/CMakeLists.txt
-index 4aea237d..784f6912 100644
+index 4aea237..784f691 100644
 --- a/java/CMakeLists.txt
 +++ b/java/CMakeLists.txt
 @@ -1,7 +1,6 @@
@@ -2532,7 +2588,7 @@ index 4aea237d..784f6912 100644
  
  #-----------------------------------------------------------------------------
 diff --git a/java/examples/CMakeLists.txt b/java/examples/CMakeLists.txt
-index ee254614..78fffed3 100644
+index ee25461..78fffed 100644
 --- a/java/examples/CMakeLists.txt
 +++ b/java/examples/CMakeLists.txt
 @@ -46,13 +46,7 @@ endforeach ()
@@ -2557,7 +2613,7 @@ index ee254614..78fffed3 100644
 -
  endif ()
 diff --git a/java/src/CMakeLists.txt b/java/src/CMakeLists.txt
-index 160b32ff..9f63d002 100644
+index 160b32f..9f63d00 100644
 --- a/java/src/CMakeLists.txt
 +++ b/java/src/CMakeLists.txt
 @@ -4,5 +4,5 @@ PROJECT ( HDF4_JAVA_SRC C Java )
@@ -2569,7 +2625,7 @@ index 160b32ff..9f63d002 100644
 +add_subdirectory (jni)
 +add_subdirectory (hdf)
 diff --git a/java/src/hdf/CMakeLists.txt b/java/src/hdf/CMakeLists.txt
-index b9c6c65e..e0af7dea 100644
+index b9c6c65..e0af7de 100644
 --- a/java/src/hdf/CMakeLists.txt
 +++ b/java/src/hdf/CMakeLists.txt
 @@ -1,4 +1,4 @@
@@ -2579,7 +2635,7 @@ index b9c6c65e..e0af7dea 100644
 -add_subdirectory (${HDF4_JAVA_HDF_SOURCE_DIR}/hdflib      hdflib)
 +add_subdirectory (hdflib)
 diff --git a/java/src/jni/CMakeLists.txt b/java/src/jni/CMakeLists.txt
-index 8f2188c0..b218d00d 100644
+index 8f2188c..b218d00 100644
 --- a/java/src/jni/CMakeLists.txt
 +++ b/java/src/jni/CMakeLists.txt
 @@ -30,19 +30,13 @@ set (CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
@@ -2605,7 +2661,7 @@ index 8f2188c0..b218d00d 100644
    if (BUILD_TESTING)
      add_custom_target (HDF4_JAVA_JNI-Test-Copy ALL
 diff --git a/java/src/jni/h4jni.h b/java/src/jni/h4jni.h
-index e1979ff3..0990b536 100644
+index e1979ff..0990b53 100644
 --- a/java/src/jni/h4jni.h
 +++ b/java/src/jni/h4jni.h
 @@ -1,16 +1,22 @@
@@ -2638,7 +2694,7 @@ index e1979ff3..0990b536 100644
  
  #ifndef _Included_h4jni
 diff --git a/java/src/jni/hdfImp.c b/java/src/jni/hdfImp.c
-index a7e59a81..7b2b2422 100644
+index a7e59a8..7b2b242 100644
 --- a/java/src/jni/hdfImp.c
 +++ b/java/src/jni/hdfImp.c
 @@ -8,7 +8,7 @@
@@ -2892,7 +2948,7 @@ index a7e59a81..7b2b2422 100644
      return JNI_TRUE;
  }
 diff --git a/java/src/jni/hdfanImp.c b/java/src/jni/hdfanImp.c
-index 69149cf9..98c983d8 100644
+index 69149cf..98c983d 100644
 --- a/java/src/jni/hdfanImp.c
 +++ b/java/src/jni/hdfanImp.c
 @@ -8,7 +8,7 @@
@@ -3022,7 +3078,7 @@ index 69149cf9..98c983d8 100644
  
      return JNI_TRUE;
 diff --git a/java/src/jni/hdfdfpalImp.c b/java/src/jni/hdfdfpalImp.c
-index 93951e38..2466b639 100644
+index 93951e3..2466b63 100644
 --- a/java/src/jni/hdfdfpalImp.c
 +++ b/java/src/jni/hdfdfpalImp.c
 @@ -8,7 +8,7 @@
@@ -3109,7 +3165,7 @@ index 93951e38..2466b639 100644
  
      return JNI_TRUE;
 diff --git a/java/src/jni/hdfdfuImp.c b/java/src/jni/hdfdfuImp.c
-index 9e554413..645bb811 100644
+index 9e55441..645bb81 100644
 --- a/java/src/jni/hdfdfuImp.c
 +++ b/java/src/jni/hdfdfuImp.c
 @@ -8,7 +8,7 @@
@@ -3122,7 +3178,7 @@ index 9e554413..645bb811 100644
   ****************************************************************************/
  /*
 diff --git a/java/src/jni/hdfexceptionImp.c b/java/src/jni/hdfexceptionImp.c
-index 905a6188..bffb4d3e 100644
+index 905a618..bffb4d3 100644
 --- a/java/src/jni/hdfexceptionImp.c
 +++ b/java/src/jni/hdfexceptionImp.c
 @@ -1,14 +1,14 @@
@@ -3148,7 +3204,7 @@ index 905a6188..bffb4d3e 100644
  /*
   *  This is a utility program used by the HDF Java-C wrapper layer to
 diff --git a/java/src/jni/hdfgrImp.c b/java/src/jni/hdfgrImp.c
-index a502f4a0..2c14266c 100644
+index a502f4a..2c14266 100644
 --- a/java/src/jni/hdfgrImp.c
 +++ b/java/src/jni/hdfgrImp.c
 @@ -8,7 +8,7 @@
@@ -3585,7 +3641,7 @@ index a502f4a0..2c14266c 100644
              ENVPTR->ReleaseByteArrayElements(ENVPAR dat, arr, JNI_ABORT);
          } /* end else */
 diff --git a/java/src/jni/hdfhxImp.c b/java/src/jni/hdfhxImp.c
-index 3fe36787..898d5f63 100644
+index 3fe3678..898d5f6 100644
 --- a/java/src/jni/hdfhxImp.c
 +++ b/java/src/jni/hdfhxImp.c
 @@ -8,7 +8,7 @@
@@ -3598,7 +3654,7 @@ index 3fe36787..898d5f63 100644
   ****************************************************************************/
  /*
 diff --git a/java/src/jni/hdfnativeImp.c b/java/src/jni/hdfnativeImp.c
-index 657c84c3..a86f9288 100644
+index 657c84c..a86f928 100644
 --- a/java/src/jni/hdfnativeImp.c
 +++ b/java/src/jni/hdfnativeImp.c
 @@ -8,7 +8,7 @@
@@ -3611,7 +3667,7 @@ index 657c84c3..a86f9288 100644
   ****************************************************************************/
  /*
 diff --git a/java/src/jni/hdfr24Imp.c b/java/src/jni/hdfr24Imp.c
-index 460fee2f..b3f282bc 100644
+index 460fee2..b3f282b 100644
 --- a/java/src/jni/hdfr24Imp.c
 +++ b/java/src/jni/hdfr24Imp.c
 @@ -8,7 +8,7 @@
@@ -3816,7 +3872,7 @@ index 460fee2f..b3f282bc 100644
  
      return JNI_TRUE;
 diff --git a/java/src/jni/hdfr8Imp.c b/java/src/jni/hdfr8Imp.c
-index efe7ee59..3d3b27db 100644
+index efe7ee5..3d3b27d 100644
 --- a/java/src/jni/hdfr8Imp.c
 +++ b/java/src/jni/hdfr8Imp.c
 @@ -8,7 +8,7 @@
@@ -4038,7 +4094,7 @@ index efe7ee59..3d3b27db 100644
  
      return JNI_TRUE;
 diff --git a/java/src/jni/hdfsdsImp.c b/java/src/jni/hdfsdsImp.c
-index 4537da4d..49538b91 100644
+index 4537da4..49538b9 100644
 --- a/java/src/jni/hdfsdsImp.c
 +++ b/java/src/jni/hdfsdsImp.c
 @@ -8,7 +8,7 @@
@@ -5040,7 +5096,7 @@ index 4537da4d..49538b91 100644
              else {
                  ENVPTR->ReleaseIntArrayElements(ENVPAR emptySDS, isempty, 0);
 diff --git a/java/src/jni/hdfstructsutil.c b/java/src/jni/hdfstructsutil.c
-index 4782d11d..416fc98f 100644
+index 4782d11..416fc98 100644
 --- a/java/src/jni/hdfstructsutil.c
 +++ b/java/src/jni/hdfstructsutil.c
 @@ -1,14 +1,14 @@
@@ -5066,7 +5122,7 @@ index 4782d11d..416fc98f 100644
  /*
   *  This module contains code to translate between the HDF C union 'comp_info'
 diff --git a/java/src/jni/hdfvdataImp.c b/java/src/jni/hdfvdataImp.c
-index 7cd39f86..1487c8a4 100644
+index 7cd39f8..1487c8a 100644
 --- a/java/src/jni/hdfvdataImp.c
 +++ b/java/src/jni/hdfvdataImp.c
 @@ -8,7 +8,7 @@
@@ -5592,7 +5648,7 @@ index 7cd39f86..1487c8a4 100644
      } /* end else */
  
 diff --git a/java/src/jni/hdfvfImp.c b/java/src/jni/hdfvfImp.c
-index b6907f35..e99d4cd2 100644
+index b6907f3..e99d4cd 100644
 --- a/java/src/jni/hdfvfImp.c
 +++ b/java/src/jni/hdfvfImp.c
 @@ -8,7 +8,7 @@
@@ -5605,7 +5661,7 @@ index b6907f35..e99d4cd2 100644
   ****************************************************************************/
   /*
 diff --git a/java/src/jni/hdfvgroupImp.c b/java/src/jni/hdfvgroupImp.c
-index 4fe69d8c..b4cacc2f 100644
+index 4fe69d8..b4cacc2 100644
 --- a/java/src/jni/hdfvgroupImp.c
 +++ b/java/src/jni/hdfvgroupImp.c
 @@ -8,7 +8,7 @@
@@ -6045,7 +6101,7 @@ index 4fe69d8c..b4cacc2f 100644
      } /* end else */
  
 diff --git a/java/src/jni/hdfvhImp.c b/java/src/jni/hdfvhImp.c
-index d8438b53..3b20d719 100644
+index d8438b5..3b20d71 100644
 --- a/java/src/jni/hdfvhImp.c
 +++ b/java/src/jni/hdfvhImp.c
 @@ -8,7 +8,7 @@
@@ -6058,7 +6114,7 @@ index d8438b53..3b20d719 100644
   ****************************************************************************/
  /*
 diff --git a/java/src/jni/hdfvqImp.c b/java/src/jni/hdfvqImp.c
-index 548070fd..e246c1fd 100644
+index 548070f..e246c1f 100644
 --- a/java/src/jni/hdfvqImp.c
 +++ b/java/src/jni/hdfvqImp.c
 @@ -8,7 +8,7 @@
@@ -6071,7 +6127,7 @@ index 548070fd..e246c1fd 100644
   ****************************************************************************/
  /*
 diff --git a/java/src/jni/hdfvsqImp.c b/java/src/jni/hdfvsqImp.c
-index 487449f9..4b58fcc5 100644
+index 487449f..4b58fcc 100644
 --- a/java/src/jni/hdfvsqImp.c
 +++ b/java/src/jni/hdfvsqImp.c
 @@ -8,7 +8,7 @@
@@ -6238,7 +6294,7 @@ index 487449f9..4b58fcc5 100644
          } /* end else */
      } /* end else */
 diff --git a/java/test/CMakeLists.txt b/java/test/CMakeLists.txt
-index 0393e161..6ae467e6 100644
+index 0393e16..6ae467e 100644
 --- a/java/test/CMakeLists.txt
 +++ b/java/test/CMakeLists.txt
 @@ -44,15 +44,9 @@ set (HDF_JAVA_TEST_FILES
@@ -6276,7 +6332,7 @@ index 0393e161..6ae467e6 100644
    NAME JUnit-interface-clearall-objects
    COMMAND    ${CMAKE_COMMAND}
 diff --git a/man/hdf.1 b/man/hdf.1
-index be59c30b..42759970 100644
+index be59c30..4275997 100644
 --- a/man/hdf.1
 +++ b/man/hdf.1
 @@ -1,5 +1,5 @@
@@ -6296,7 +6352,7 @@ index be59c30b..42759970 100644
  Copyright by The HDF Group.
  .sp 0
 diff --git a/mfhdf/CMakeLists.txt b/mfhdf/CMakeLists.txt
-index ba6a719a..36b2f3cd 100644
+index ba6a719..36b2f3c 100644
 --- a/mfhdf/CMakeLists.txt
 +++ b/mfhdf/CMakeLists.txt
 @@ -8,14 +8,14 @@ if (EXISTS "${HDF4_MFHDF_SOURCE_DIR}/dumper" AND IS_DIRECTORY "${HDF4_MFHDF_SOUR
@@ -6322,7 +6378,7 @@ index ba6a719a..36b2f3cd 100644
    endif ()
  endif ()
 diff --git a/mfhdf/dumper/CMakeLists.txt b/mfhdf/dumper/CMakeLists.txt
-index 401bda0e..881d0c2a 100644
+index 401bda0..881d0c2 100644
 --- a/mfhdf/dumper/CMakeLists.txt
 +++ b/mfhdf/dumper/CMakeLists.txt
 @@ -27,12 +27,9 @@ if (HDF4_BUILD_XDR_LIB)
@@ -6340,7 +6396,7 @@ index 401bda0e..881d0c2a 100644
    set_target_properties (hdp PROPERTIES LINK_FLAGS "/STACK:10000000")
  endif ()
 diff --git a/mfhdf/dumper/CMakeTests.cmake b/mfhdf/dumper/CMakeTests.cmake
-index 5528036a..3ee188cf 100644
+index 5528036..3ee188c 100644
 --- a/mfhdf/dumper/CMakeTests.cmake
 +++ b/mfhdf/dumper/CMakeTests.cmake
 @@ -129,27 +129,10 @@
@@ -6375,7 +6431,7 @@ index 5528036a..3ee188cf 100644
  ##############################################################################
  ##############################################################################
 diff --git a/mfhdf/examples/CMakeLists.txt b/mfhdf/examples/CMakeLists.txt
-index 0cdff6b3..d81c4ff8 100644
+index 0cdff6b..d81c4ff 100644
 --- a/mfhdf/examples/CMakeLists.txt
 +++ b/mfhdf/examples/CMakeLists.txt
 @@ -25,13 +25,8 @@ set (examples
@@ -6394,7 +6450,7 @@ index 0cdff6b3..d81c4ff8 100644
  
  if (BUILD_TESTING)
 diff --git a/mfhdf/fortran/CMakeLists.txt b/mfhdf/fortran/CMakeLists.txt
-index 49a9a250..992aa0e1 100644
+index 49a9a25..992aa0e 100644
 --- a/mfhdf/fortran/CMakeLists.txt
 +++ b/mfhdf/fortran/CMakeLists.txt
 @@ -41,12 +41,8 @@ set (FORTRAN_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -6444,7 +6500,7 @@ index 49a9a250..992aa0e1 100644
    H4_SET_LIB_OPTIONS (${HDF4_MF_FORTRAN_LIBSH_TARGET} ${HDF4_MF_FORTRAN_LIB_NAME} SHARED)
    set_target_properties (${HDF4_MF_FORTRAN_LIBSH_TARGET} PROPERTIES
 diff --git a/mfhdf/fortran/CMakeTests.cmake b/mfhdf/fortran/CMakeTests.cmake
-index a23b69f4..c7b1d55c 100644
+index a23b69f..c7b1d55 100644
 --- a/mfhdf/fortran/CMakeTests.cmake
 +++ b/mfhdf/fortran/CMakeTests.cmake
 @@ -13,14 +13,9 @@
@@ -6521,7 +6577,7 @@ index a23b69f4..c7b1d55c 100644
  ##############################################################################
  ##############################################################################
 diff --git a/mfhdf/fortran/examples/CMakeLists.txt b/mfhdf/fortran/examples/CMakeLists.txt
-index bc3dfe9f..324485ee 100644
+index bc3dfe9..324485e 100644
 --- a/mfhdf/fortran/examples/CMakeLists.txt
 +++ b/mfhdf/fortran/examples/CMakeLists.txt
 @@ -47,34 +47,24 @@ set (skip_examples
@@ -6562,7 +6618,7 @@ index bc3dfe9f..324485ee 100644
  
  if (BUILD_TESTING)
 diff --git a/mfhdf/hdfimport/CMakeLists.txt b/mfhdf/hdfimport/CMakeLists.txt
-index 264d990f..1cb7d5fb 100644
+index 264d990..1cb7d5f 100644
 --- a/mfhdf/hdfimport/CMakeLists.txt
 +++ b/mfhdf/hdfimport/CMakeLists.txt
 @@ -27,12 +27,7 @@ set (hdfimport_SRCS
@@ -6580,7 +6636,7 @@ index 264d990f..1cb7d5fb 100644
  
  if (BUILD_TESTING)
 diff --git a/mfhdf/hdfimport/CMakeTests.cmake b/mfhdf/hdfimport/CMakeTests.cmake
-index 2784939b..b478b258 100644
+index 2784939..b478b25 100644
 --- a/mfhdf/hdfimport/CMakeTests.cmake
 +++ b/mfhdf/hdfimport/CMakeTests.cmake
 @@ -14,34 +14,6 @@
@@ -6679,7 +6735,7 @@ index 2784939b..b478b258 100644
  ##############################################################################
  ##############################################################################
 diff --git a/mfhdf/hdiff/CMakeLists.txt b/mfhdf/hdiff/CMakeLists.txt
-index 790041b7..da2deeba 100644
+index 790041b..da2deeb 100644
 --- a/mfhdf/hdiff/CMakeLists.txt
 +++ b/mfhdf/hdiff/CMakeLists.txt
 @@ -33,12 +33,7 @@ set (hdiff_SRCS
@@ -6697,7 +6753,7 @@ index 790041b7..da2deeba 100644
  
  if (BUILD_TESTING)
 diff --git a/mfhdf/hdiff/CMakeTests.cmake b/mfhdf/hdiff/CMakeTests.cmake
-index 8361ca7b..6778350f 100644
+index 8361ca7..6778350 100644
 --- a/mfhdf/hdiff/CMakeTests.cmake
 +++ b/mfhdf/hdiff/CMakeTests.cmake
 @@ -16,12 +16,7 @@
@@ -6766,7 +6822,7 @@ index 8361ca7b..6778350f 100644
  ##############################################################################
  ###           T H E   T E S T S                                            ###
 diff --git a/mfhdf/hrepack/CMakeLists.txt b/mfhdf/hrepack/CMakeLists.txt
-index db01a3e5..953c04bc 100644
+index db01a3e..953c04b 100644
 --- a/mfhdf/hrepack/CMakeLists.txt
 +++ b/mfhdf/hrepack/CMakeLists.txt
 @@ -36,21 +36,11 @@ set (hrepack_SRCS
@@ -6794,7 +6850,7 @@ index db01a3e5..953c04bc 100644
  
  if (BUILD_TESTING)
 diff --git a/mfhdf/hrepack/CMakeTests.cmake b/mfhdf/hrepack/CMakeTests.cmake
-index 56422094..79beec6e 100644
+index 5642209..79beec6 100644
 --- a/mfhdf/hrepack/CMakeTests.cmake
 +++ b/mfhdf/hrepack/CMakeTests.cmake
 @@ -16,25 +16,14 @@
@@ -6827,7 +6883,7 @@ index 56422094..79beec6e 100644
    macro (ADD_H4_TEST testname testtype testfile)
      if ("${testtype}" STREQUAL "SKIP")
 diff --git a/mfhdf/libsrc/CMakeLists.txt b/mfhdf/libsrc/CMakeLists.txt
-index 45952db2..9a27c773 100644
+index 45952db..9a27c77 100644
 --- a/mfhdf/libsrc/CMakeLists.txt
 +++ b/mfhdf/libsrc/CMakeLists.txt
 @@ -57,11 +57,11 @@ INCLUDE_DIRECTORIES (${HDF4_MFHDFSOURCE_DIR})
@@ -6861,7 +6917,7 @@ index 45952db2..9a27c773 100644
    H4_SET_LIB_OPTIONS (${HDF4_MF_LIBSH_TARGET} ${HDF4_MF_LIB_NAME} SHARED)
    set_target_properties (${HDF4_MF_LIBSH_TARGET} PROPERTIES
 diff --git a/mfhdf/ncdump/CMakeLists.txt b/mfhdf/ncdump/CMakeLists.txt
-index 5426e7e6..07666006 100644
+index 5426e7e..0766600 100644
 --- a/mfhdf/ncdump/CMakeLists.txt
 +++ b/mfhdf/ncdump/CMakeLists.txt
 @@ -26,12 +26,7 @@ set (ncdump_SRCS
@@ -6879,7 +6935,7 @@ index 5426e7e6..07666006 100644
  if (BUILD_TESTING)
    include (CMakeTests.cmake)
 diff --git a/mfhdf/ncdump/CMakeTests.cmake b/mfhdf/ncdump/CMakeTests.cmake
-index 826e3be1..c8ebe5c5 100644
+index 826e3be..c8ebe5c 100644
 --- a/mfhdf/ncdump/CMakeTests.cmake
 +++ b/mfhdf/ncdump/CMakeTests.cmake
 @@ -22,13 +22,8 @@ else ()
@@ -6899,7 +6955,7 @@ index 826e3be1..c8ebe5c5 100644
  if (NCGEN_UTILITY)
    add_test (
 diff --git a/mfhdf/ncgen/CMakeLists.txt b/mfhdf/ncgen/CMakeLists.txt
-index 0d12a5a7..33df9cb3 100644
+index 0d12a5a..33df9cb 100644
 --- a/mfhdf/ncgen/CMakeLists.txt
 +++ b/mfhdf/ncgen/CMakeLists.txt
 @@ -39,12 +39,7 @@ endif ()
@@ -6917,7 +6973,7 @@ index 0d12a5a7..33df9cb3 100644
  if (BUILD_TESTING)
    include (CMakeTests.cmake)
 diff --git a/mfhdf/ncgen/CMakeTests.cmake b/mfhdf/ncgen/CMakeTests.cmake
-index e057bc00..fa833124 100644
+index e057bc0..fa83312 100644
 --- a/mfhdf/ncgen/CMakeTests.cmake
 +++ b/mfhdf/ncgen/CMakeTests.cmake
 @@ -32,13 +32,8 @@
@@ -6937,7 +6993,7 @@ index e057bc00..fa833124 100644
  #-- Adding test for ncgen
  add_test (
 diff --git a/mfhdf/nctest/CMakeLists.txt b/mfhdf/nctest/CMakeLists.txt
-index c1e6f3de..5923a308 100644
+index c1e6f3d..5923a30 100644
 --- a/mfhdf/nctest/CMakeLists.txt
 +++ b/mfhdf/nctest/CMakeLists.txt
 @@ -42,28 +42,6 @@ set (nctest_SRCS
@@ -6971,7 +7027,7 @@ index c1e6f3de..5923a308 100644
  
  include (CMakeTests.cmake)
 diff --git a/mfhdf/nctest/CMakeTests.cmake b/mfhdf/nctest/CMakeTests.cmake
-index e7e0123a..774815df 100644
+index e7e0123..774815d 100644
 --- a/mfhdf/nctest/CMakeTests.cmake
 +++ b/mfhdf/nctest/CMakeTests.cmake
 @@ -5,6 +5,16 @@
@@ -6992,7 +7048,7 @@ index e7e0123a..774815df 100644
  add_test (
      NAME NC_TEST-clearall-objects
 diff --git a/mfhdf/test/CMakeLists.txt b/mfhdf/test/CMakeLists.txt
-index d719e4ef..6d857405 100644
+index d719e4e..6d85740 100644
 --- a/mfhdf/test/CMakeLists.txt
 +++ b/mfhdf/test/CMakeLists.txt
 @@ -14,7 +14,6 @@ if (HDF4_BUILD_XDR_LIB)
@@ -7080,7 +7136,7 @@ index d719e4ef..6d857405 100644
  endif ()
  
 diff --git a/mfhdf/test/CMakeTests.cmake b/mfhdf/test/CMakeTests.cmake
-index 97b09b66..b3b586a0 100644
+index 97b09b6..b3b586a 100644
 --- a/mfhdf/test/CMakeTests.cmake
 +++ b/mfhdf/test/CMakeTests.cmake
 @@ -18,48 +18,18 @@ set (HDF4_REFERENCE_TEST_FILES
@@ -7167,7 +7223,7 @@ index 97b09b66..b3b586a0 100644
    if (HDF4_ENABLE_USING_MEMCHECKER)
      add_test (NAME MFHDF_TEST-xdrtest COMMAND $<TARGET_FILE:xdrtest>)
 diff --git a/mfhdf/xdr/CMakeLists.txt b/mfhdf/xdr/CMakeLists.txt
-index f332a81a..1222db0c 100644
+index f332a81..1222db0 100644
 --- a/mfhdf/xdr/CMakeLists.txt
 +++ b/mfhdf/xdr/CMakeLists.txt
 @@ -18,7 +18,7 @@ INCLUDE_DIRECTORIES (${HDF4_MFHDF_XDR_DIR})
@@ -7189,7 +7245,7 @@ index f332a81a..1222db0c 100644
    TARGET_C_PROPERTIES (${HDF4_MF_XDR_LIBSH_TARGET} SHARED " " " ")
    set_global_variable (HDF4_LIBRARIES_TO_EXPORT "${HDF4_LIBRARIES_TO_EXPORT};${HDF4_MF_XDR_LIBSH_TARGET}")
 diff --git a/release_notes/HISTORY.txt b/release_notes/HISTORY.txt
-index 4b9c9bfc..fb9eef53 100644
+index 4b9c9bf..fb9eef5 100644
 --- a/release_notes/HISTORY.txt
 +++ b/release_notes/HISTORY.txt
 @@ -16,6 +16,7 @@
@@ -7446,7 +7502,7 @@ index 4b9c9bfc..fb9eef53 100644
  HDF version 4.2.12 released on 2016-06-29
  ====================================================
 diff --git a/release_notes/INSTALL_CMake.txt b/release_notes/INSTALL_CMake.txt
-index a9a88fed..f0c17594 100644
+index a9a88fe..f0c1759 100644
 --- a/release_notes/INSTALL_CMake.txt
 +++ b/release_notes/INSTALL_CMake.txt
 @@ -25,7 +25,7 @@ Obtaining HDF4 source code
@@ -8176,7 +8232,7 @@ index a9a88fed..f0c17594 100644
  ========================================================================
  For further assistance, send email to help@hdfgroup.org
 diff --git a/release_notes/RELEASE.txt b/release_notes/RELEASE.txt
-index 1d7d6011..66c4680e 100644
+index 1d7d601..66c4680 100644
 --- a/release_notes/RELEASE.txt
 +++ b/release_notes/RELEASE.txt
 @@ -1,11 +1,11 @@
@@ -8292,7 +8348,7 @@ index 1d7d6011..66c4680e 100644
  
  o  CMake "make install" fails installing the tools:
 diff --git a/release_notes/USING_CMake_Examples.txt b/release_notes/USING_CMake_Examples.txt
-index 2a38cd06..dfba01b7 100644
+index 2a38cd0..dfba01b 100644
 --- a/release_notes/USING_CMake_Examples.txt
 +++ b/release_notes/USING_CMake_Examples.txt
 @@ -25,7 +25,7 @@ I. Preconditions
@@ -8314,7 +8370,7 @@ index 2a38cd06..dfba01b7 100644
  
         If the defaults are okay, execute from this directory:
 diff --git a/release_notes/USING_HDF4_CMake.txt b/release_notes/USING_HDF4_CMake.txt
-index ac5d200d..572b47f4 100644
+index ac5d200..572b47f 100644
 --- a/release_notes/USING_HDF4_CMake.txt
 +++ b/release_notes/USING_HDF4_CMake.txt
 @@ -27,7 +27,7 @@ Notes: This short instruction is written for users who want to quickly
@@ -8673,7 +8729,7 @@ index ac5d200d..572b47f4 100644
  
  
 diff --git a/release_notes/USING_HDF4_VS.txt b/release_notes/USING_HDF4_VS.txt
-index 7b68ed53..19dc75f9 100644
+index 7b68ed5..19dc75f 100644
 --- a/release_notes/USING_HDF4_VS.txt
 +++ b/release_notes/USING_HDF4_VS.txt
 @@ -50,11 +50,11 @@ Using Visual Studio 2008 with HDF4 Libraries built with Visual Studio 2008
