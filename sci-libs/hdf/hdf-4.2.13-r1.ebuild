@@ -114,7 +114,7 @@ src_install() {
 	use static-libs || prune_libtool_files --all
 
 	# Remove duplicate copy of examples directory
-	rm -r "${ED}/usr/share/doc/${PF}/examples/HDF4Examples" || die
+	if use examples ; then rm -r "${ED}/usr/share/doc/${PF}/examples/HDF4Examples" || die ; fi
 
 	# Install man pages, renaming ncdump and ncgen with suffix -hdf
 	doman ${S}/man/*.1
