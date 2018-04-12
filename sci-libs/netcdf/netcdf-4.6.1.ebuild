@@ -12,7 +12,7 @@ SRC_URI="https://github.com/Unidata/netcdf-c/archive/v${PV}.tar.gz -> ${P}.tar.g
 LICENSE="UCAR-Unidata"
 SLOT="0/11"
 KEYWORDS="~amd64 ~arm ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
-IUSE="+dap examples hdf +hdf5 mpi static-libs szip test tools"
+IUSE="+dap examples +hdf +hdf5 mpi +static-libs +szip test +tools"
 
 RDEPEND="
 	dap? ( net-misc/curl:0= )
@@ -28,7 +28,10 @@ S="${WORKDIR}/${PN}-c-${PV}"
 
 src_prepare() {
 	cmake-utils_src_prepare
+	# Fix detection of hdf includes to use /usr/include/hdf
 	sed -e 's/FIND_PATH(MFHDF_H_INCLUDE_DIR mfhdf.h)/FIND_PATH(MFHDF_H_INCLUDE_DIR mfhdf.h PATH_SUFFIXES hdf)/' -i CMakeLists.txt
+	# Give ourselves a sane way of passing CFLAGS
+	sed -e 's/: ${CFLAGS=""}/: ${CFLAGS="${NC_CFLAGS}")/'
 }
 
 src_configure() {
@@ -47,11 +50,12 @@ src_configure() {
 #		$(use_enable static-libs static) \
 #		$(use_enable tools utilities)
 
-	CFLAGS="${CFLAGS} -I${EPREFIX}/usr/include/hdf"
+#	NC_CFLAGS="-I${EPREFIX}/usr/include/hdf"
 	mycmakeargs=(
 		-DENABLE_DAP=$(usex dap)
 		-DENABLE_HDF4=$(usex hdf)
-		-DENABLE_HDF5=$(usex hdf5)
+		-DUSE_HDF5=$(usex hdf5)
+		-DENABLE_NETCDF_4=$(usex hdf5)
 		-BUILD_UTILITIES=$(usex tools)
 	)
 	cmake-utils_src_configure
