@@ -92,6 +92,7 @@ src_configure() {
 		-DBUILD_TESTING=$(usex test)
 		-DHDF4_INSTALL_LIB_DIR="$(get_libdir)"
 		-DHDF4_INSTALL_INCLUDE_DIR="include/hdf"
+		-DHDF4_INSTALL_DATA_DIR="share"
 		-DHDF4_INSTALL_CMAKE_DIR="$(get_libdir)/cmake"
 		-DHDF4_ENABLE_SZIP_SUPPORT=$(usex szip)
 		-DHDF4_ENABLE_NETCDF=$(usex test)
@@ -108,7 +109,7 @@ src_configure() {
 src_install() {
 	cmake-utils_src_install
 	# Set to use shared libs by default
-	sed -e '/component(static)/,/endif/ s/static/shared/g' -i "${ED}usr/share/cmake/hdf4/hdf4-config.cmake" || die
+	sed -e '/component(static)/,/endif/ s/static/shared/g' -i "${ED}usr/$(get_libdir)/cmake/hdf4/hdf4-config.cmake" || die
 
 	use static-libs || prune_libtool_files --all
 
