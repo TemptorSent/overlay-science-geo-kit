@@ -17,7 +17,7 @@
 +		[dap_xdrlib=""]
 +	)
 +	AS_IF(
-+	[test "$dap_xdrlib" != ""],
++	[test "$dap_xdrlib" = ""],
 +    	[AC_SEARCH_LIBS([xdr_void],[c rpc nsl rpcsvc],[
 +    	  dap_xdrlib=`echo $ac_res|sed -e 's/^-l//'`],[
 +    	  AC_MSG_WARN(Cannot locate library containing xdr functions.)])])

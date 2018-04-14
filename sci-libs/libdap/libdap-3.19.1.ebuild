@@ -7,12 +7,12 @@ inherit autotools flag-o-matic toolchain-funcs
 
 DESCRIPTION="Implementation of libdap C++ SDK with DAP2 and DAP4 support"
 HOMEPAGE="http://opendap.org/"
-SRC_URI="http://www.opendap.org/pub/source/${P}.tar.gz"
+SRC_URI="https://github.com/OPENDAP/libdap4/archive/version-${PV}.tar.gz  -> ${P}.tar.gz"
 
 LICENSE="|| ( LGPL-2.1 URI )"
 SLOT="0"
 KEYWORDS="amd64 ~ppc ~ppc64 x86 ~amd64-linux ~x86-linux"
-IUSE="static-libs test +tests-net"
+IUSE="static-libs test allow-network-tests"
 
 RDEPEND="
 	net-libs/libtirpc
@@ -30,6 +30,8 @@ PATCHES=(
 	"${FILESDIR}/${PN}-3.19.1-use-libtirpc.patch"
 )
 
+S="${WORKDIR}/libdap4-version-${PV}"
+
 src_prepare() {
 
 	default
@@ -46,7 +48,7 @@ src_prepare() {
 		-i tests/Makefile.am || die
 
 	# Remove network tests unless requested
-	if ! use tests-net ; then
+	if ! use allow-network-tests ; then
 		sed -e '/UNIT_TESTS = /,/UNIT_TESTS += / {
 					s/HTTPConnectTest// ;
 					s/RCReaderTest// ;
