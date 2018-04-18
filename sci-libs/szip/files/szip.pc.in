@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/@SZIP_INSTALL_LIB_DIR@
+includedir=${prefix}/@SZIP_INSTALL_INCLUDE_DIR@
+
+Name: szip
+Description: Implementation of the extended-Rice lossless compression algorithm
+Version: @SZIP_PACKAGE_VERSION@
+Libs: -L${libdir} -l@SZIP_LIB_NAME@
+Libs.private: -l${libdir}/@CMAKE_STATIC_LIBRARY_PREFIX@@SZIP_LIB_NAME@@CMAKE_STATIC_LIBRARY_SUFFIX@
+Cflags: -I${includedir}

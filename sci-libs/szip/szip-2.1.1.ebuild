@@ -1,5 +1,3 @@
-# Copyright 1999-2018 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
 
@@ -11,14 +9,14 @@ SRC_URI="https://support.hdfgroup.org/ftp/lib-external/${PN}/${PV}/src/${P}.tar.
 LICENSE="szip"
 
 SLOT="0/${PV}"
-KEYWORDS="alpha amd64 ~arm ~arm64 ~hppa ia64 ~ppc ppc64 sparc x86 ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="*"
 
 IUSE="+static-libs test"
 RDEPEND="!sci-libs/libaec[szip]"
 DEPEND="
 	>=dev-util/cmake-3.2.2
 "
-
+PATCHES=( "${FILESDIR}/szip-2.1.1-pkgconf.patch" )
 src_unpack() {
 	# Fix archive which was compressed twice and unpack.
 	zcat "${DISTDIR}/${A}" > "${T}/${A}"
@@ -27,14 +25,19 @@ src_unpack() {
 
 src_prepare() {
 	default
+	sed -re 's/(set \(SZIP_LIB_CORENAME[[:space:]]+")[-+_[:alnum:]]+("\))/\1sz\2/' -i CMakeLists.txt
 
-	# Allow conditional installation of static libs and fixes output lib names.
+	# Allow conditional installation of static libs and fix output lib names.
 	sed -e 's/set (install_targets ${SZIP_LIB_TARGET})/if (BUILD_STATIC_LIBS)\n&\nendif ()/' \
 		-e '/set_target_properties(${SZIP_LIB_TARGET} PROPERTIES/ a\
-	OUTPUT_NAME "${SZIP_LIB_CORENAME}"' \
+    OUTPUT_NAME "${SZIP_LIB_NAME}"' \
 		-e '/set_target_properties(${SZIP_LIBSH_TARGET} PROPERTIES/ a\
-	OUTPUT_NAME "${SZIP_LIB_CORENAME}"' \
+    OUTPUT_NAME "${SZIP_LIB_NAME}"' \
 		-i src/CMakeLists.txt || die
+	# Fix up cmake config files
+	cp "${FILESDIR}/cmake"/* config/cmake
+
+	cp "${FILESDIR}/szip.pc.in" config/cmake
 
 	cmake-utils_src_prepare
 }

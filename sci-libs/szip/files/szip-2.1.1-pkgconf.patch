@@ -1,0 +1,39 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b834426..5d6aff1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -51,6 +51,9 @@ if (NOT SZIP_INSTALL_DATA_DIR)
+     set (SZIP_INSTALL_CMAKE_DIR cmake)
+   endif ()
+ endif ()
++if (NOT SZIP_INSTALL_PKGCONFIG_DIR)
++  set (SZIP_INSTALL_PKGCONFIG_DIR ${SZIP_INSTALL_LIB_DIR}/pkgconfig)
++endif ()
+ 
+ #-----------------------------------------------------------------------------
+ # parse the full version number from szlib.h and include in SZLIB_FULL_VERSION
+@@ -323,6 +326,24 @@ if (NOT SZIP_EXTERNALLY_CONFIGURED)
+   )
+ endif ()
+ 
++
++#-----------------------------------------------------------------------------
++# Configure the szip.pc pkg-config file
++#-----------------------------------------------------------------------------
++
++if (NOT SZIP_EXTERNALLY_CONFIGURED)
++  configure_file (
++      ${SZIP_RESOURCES_DIR}/szip.pc.in
++      ${SZIP_BINARY_DIR}/${SZIP_PACKAGE}${SZIP_PACKAGE_EXT}.pc @ONLY
++  )
++  install (
++      FILES ${SZIP_BINARY_DIR}/${SZIP_PACKAGE}${SZIP_PACKAGE_EXT}.pc
++      DESTINATION ${SZIP_INSTALL_PKGCONFIG_DIR}
++      COMPONENT configinstall
++  )
++endif ()
++
++
+ #-----------------------------------------------------------------------------
+ # Add Document File(s) to CMake Install
+ #-----------------------------------------------------------------------------
